@@ -1,0 +1,92 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client"
+  output   = "../src/generated/prisma"
+}
+
+datasource db {
+  provider = "sqlite"
+}
+
+// ============================================
+// 사용자 (Users Table)
+// ============================================
+model User {
+  id          String   @id @default(cuid())
+  nickname    String
+  socialType  String   // "apple" | "kakao"
+  socialId    String   @unique // 소셜 로그인 고유 ID
+  totalStamps Int      @default(0)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  stamps UserStamp[]
+
+  @@map("users")
+}
+
+// ============================================
+// 지역 (Regions Table) - 228개 기초자치단체
+// ============================================
+model Region {
+  id            String  @id @default(cuid())
+  sidoName      String  // 시·도명 (예: "서울특별시")
+  sigunguName   String  // 시·군·구명 (예: "강남구")
+  areaCode      String  // TourAPI 시·도 코드
+  sigunguCode   String  // TourAPI 시·군·구 코드
+  isDepopulated Boolean @default(false) // 인구감소지역 여부
+  centerLat     Float   // 중심 위도
+  centerLng     Float   // 중심 경도
+
+  places Place[]
+  stamps UserStamp[]
+
+  @@unique([areaCode, sigunguCode])
+  @@map("regions")
+}
+
+// ============================================
+// 관광지 캐시 (Places Cache Table - TourAPI 동기화)
+// ============================================
+model Place {
+  id        String  @id @default(cuid())
+  name      String  // 관광지명
+  address   String  // 주소
+  thumbnail String? // 썸네일 이미지 URL (firstimage)
+  mapX      Float   // 경도 (longitude)
+  mapY      Float   // 위도 (latitude)
+  contentId String  @unique // TourAPI 콘텐츠 ID (중복 방지)
+
+  regionId String
+  region   Region @relation(fields: [regionId], references: [id])
+
+  stamps UserStamp[]
+
+  @@index([regionId])
+  @@map("places")
+}
+
+// ============================================
+// 방문 기록 (User_Stamps Table)
+// ============================================
+model UserStamp {
+  id          String   @id @default(cuid())
+  checkedInAt DateTime @default(now())
+
+  userId String
+  user   User   @relation(fields: [userId], references: [id])
+
+  placeId String
+  place   Place  @relation(fields: [placeId], references: [id])
+
+  regionId String
+  region   Region @relation(fields: [regionId], references: [id])
+
+  @@index([userId])
+  @@index([placeId])
+  @@index([regionId])
+  @@index([checkedInAt])
+  @@map("user_stamps")
+}

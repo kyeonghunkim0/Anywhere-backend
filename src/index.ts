@@ -1,6 +1,8 @@
 import express from "express";
 import cors from "cors";
+import swaggerUi from "swagger-ui-express";
 import { env, validateEnv } from "./config/env.js";
+import { swaggerDocument } from "./config/swagger.js";
 import authRoutes from "./routes/auth.routes.js";
 import matchRoutes from "./routes/match.routes.js";
 import missionRoutes from "./routes/mission.routes.js";
@@ -31,6 +33,11 @@ app.get("/health", (_req, res) => {
 });
 
 // ============================================
+// Swagger API 문서
+// ============================================
+app.use("/api-docs", swaggerUi.serve, swaggerUi.setup(swaggerDocument));
+
+// ============================================
 // API 라우트
 // ============================================
 app.use("/api/auth", authRoutes);
@@ -49,10 +56,5 @@ startSyncPlacesJob();
 // ============================================
 app.listen(env.PORT, () => {
   console.log(`🚀 Anywhere 서버가 포트 ${env.PORT}에서 실행 중입니다.`);
-  console.log(`📡 Health Check: http://localhost:${env.PORT}/health`);
-  console.log(`🔐 Auth:     POST /api/auth/login`);
-  console.log(`🎯 Match:    GET  /api/match/random`);
-  console.log(`📍 Mission:  POST /api/mission/check-in`);
-  console.log(`📘 Passport: GET  /api/passport/:userId`);
-  console.log(`🏆 Ranking:  GET  /api/ranking/users | /api/ranking/places`);
+  console.log(`📖 Swagger:  http://localhost:${env.PORT}/api-docs`);
 });

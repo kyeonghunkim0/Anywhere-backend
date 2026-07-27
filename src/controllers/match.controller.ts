@@ -1,12 +1,18 @@
 import { Response } from "express";
 import { AuthRequest } from "../middlewares/auth.middleware.js";
-import { getRandomMatch } from "../services/match.service.js";
+import { getRandomMatch, MatchLimitExceededError } from "../services/match.service.js";
 
 /**
  * GET /api/match/random?lat=37.5&lng=127.0&radiusKm=50
  */
 export async function getRandomMatchController(req: AuthRequest, res: Response): Promise<void> {
   try {
+    const userId = req.user?.userId;
+    if (!userId) {
+      res.status(401).json({ success: false, message: "인증 정보가 없습니다." });
+      return;
+    }
+
     const lat = parseFloat(req.query.lat as string);
     const lng = parseFloat(req.query.lng as string);
     const radiusKm = req.query.radiusKm ? parseFloat(req.query.radiusKm as string) : undefined;
@@ -19,7 +25,7 @@ export async function getRandomMatchController(req: AuthRequest, res: Response):
       return;
     }
 
-    const result = await getRandomMatch({ userLat: lat, userLng: lng, radiusKm });
+    const result = await getRandomMatch({ userId, userLat: lat, userLng: lng, radiusKm });
 
     if (!result) {
       res.status(404).json({
@@ -34,6 +40,14 @@ export async function getRandomMatchController(req: AuthRequest, res: Response):
       data: result,
     });
   } catch (error) {
+    if (error instanceof MatchLimitExceededError) {
+      res.status(429).json({
+        success: false,
+        message: error.message,
+      });
+      return;
+    }
+
     console.error("랜덤 매칭 에러:", error);
     res.status(500).json({
       success: false,

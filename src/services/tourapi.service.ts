@@ -2,7 +2,7 @@ import axios from "axios";
 import { prisma } from "../utils/prisma.js";
 import { env } from "../config/env.js";
 
-const TOUR_API_BASE = "https://apis.data.go.kr/B551011/KorService1";
+const TOUR_API_BASE = "https://apis.data.go.kr/B551011/KorService2";
 
 interface TourApiItem {
   contentid: string;
@@ -16,14 +16,14 @@ interface TourApiItem {
 
 /**
  * TourAPI 4.0 지역기반 관광정보 조회
- * GET /areaBasedList1
+ * GET /areaBasedList2
  */
 async function fetchPlacesByRegion(
   areaCode: string,
   sigunguCode: string
 ): Promise<TourApiItem[]> {
   try {
-    const response = await axios.get(`${TOUR_API_BASE}/areaBasedList1`, {
+    const response = await axios.get(`${TOUR_API_BASE}/areaBasedList2`, {
       params: {
         serviceKey: decodeURIComponent(env.TOUR_API_KEY), // Encoding/Decoding 키 모두 안전하게 처리
         numOfRows: 100,

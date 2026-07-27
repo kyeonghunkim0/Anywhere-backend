@@ -10,11 +10,12 @@ export const swaggerDocument: JsonObject = {
       "소셜 로그인 후 발급받은 JWT 토큰을 `Authorization: Bearer <token>` 헤더에 포함하여 요청합니다.\n\n" +
       "### 주요 기능\n" +
       "- 🔐 Apple / 카카오 소셜 로그인\n" +
-      "- 🎯 인구감소지역 가중치 기반 랜덤 관광지 매칭\n" +
-      "- 📍 GPS 기반 반경 500m 체크인\n" +
+      "- 🎯 인구감소지역 가중치 기반 랜덤 관광지 매칭 (일 3회 제한)\n" +
+      "- 📍 GPS 기반 반경 500m 체크인 (인구감소지역 보상 2배)\n" +
       "- 📘 228개 지역 여권(도장) 수집 현황\n" +
-      "- 🏆 유저 / 인기 지역 랭킹",
-    version: "1.0.0",
+      "- 🏆 유저 / 인기 지역 랭킹 + 내 랭킹 조회\n" +
+      "- 📢 실시간 활동 피드",
+    version: "1.1.0",
     contact: {
       name: "Anywhere Team",
     },
@@ -31,6 +32,7 @@ export const swaggerDocument: JsonObject = {
     { name: "Mission", description: "방문 인증 (체크인)" },
     { name: "Passport", description: "여권 (도장 수집 현황)" },
     { name: "Ranking", description: "랭킹" },
+    { name: "Feed", description: "실시간 활동 피드" },
   ],
   components: {
     securitySchemes: {
@@ -77,6 +79,73 @@ export const swaggerDocument: JsonObject = {
           sidoName: { type: "string", example: "서울특별시" },
           sigunguName: { type: "string", example: "종로구" },
           isDepopulated: { type: "boolean", example: false },
+        },
+      },
+      MatchInfo: {
+        type: "object",
+        properties: {
+          remainingMatches: {
+            type: "integer",
+            example: 2,
+            description: "오늘 남은 매칭 횟수",
+          },
+          isDepopulatedBonus: {
+            type: "boolean",
+            example: true,
+            description: "인구감소지역 골드 배지 여부",
+          },
+        },
+      },
+      StampResult: {
+        type: "object",
+        properties: {
+          id: { type: "string" },
+          placeName: { type: "string" },
+          regionName: { type: "string" },
+          isDepopulated: { type: "boolean" },
+          bonusMultiplier: {
+            type: "integer",
+            example: 2,
+            description: "보상 배수 (1=일반, 2=인구감소지역)",
+          },
+          stampsEarned: {
+            type: "integer",
+            example: 2,
+            description: "이번에 획득한 도장 수",
+          },
+          checkedInAt: { type: "string", format: "date-time" },
+          totalStamps: { type: "integer" },
+        },
+      },
+      FeedItem: {
+        type: "object",
+        properties: {
+          id: { type: "string" },
+          nickname: { type: "string", example: "여행자" },
+          sidoName: { type: "string", example: "전라남도" },
+          sigunguName: { type: "string", example: "신안군" },
+          placeName: { type: "string", example: "증도 태평염전" },
+          isDepopulated: { type: "boolean", example: true },
+          checkedInAt: { type: "string", format: "date-time" },
+          message: {
+            type: "string",
+            example: "🌟 여행자님이 전라남도 신안군 도장을 획득했습니다!",
+          },
+        },
+      },
+      MyRank: {
+        type: "object",
+        properties: {
+          rank: { type: "integer", example: 42 },
+          totalUsers: { type: "integer", example: 1000 },
+          userId: { type: "string" },
+          nickname: { type: "string" },
+          totalStamps: { type: "integer" },
+          topPercentage: {
+            type: "number",
+            example: 4.2,
+            description: "상위 N%",
+          },
         },
       },
     },
@@ -148,7 +217,10 @@ export const swaggerDocument: JsonObject = {
         tags: ["Match"],
         summary: "랜덤 관광지 매칭",
         description:
-          "사용자 현재 GPS 기반으로 반경 내 관광지 중 랜덤 1곳을 반환합니다. 인구감소지역에 70% 가중치가 적용됩니다.",
+          "사용자 현재 GPS 기반으로 반경 내 관광지 중 랜덤 1곳을 반환합니다.\n\n" +
+          "- 인구감소지역에 70% 가중치 적용\n" +
+          "- **하루 최대 3회** 매칭 가능 (초과 시 429 응답)\n" +
+          "- 이미 방문한 장소는 우선순위가 낮아집니다",
         security: [{ BearerAuth: [] }],
         parameters: [
           {
@@ -187,6 +259,7 @@ export const swaggerDocument: JsonObject = {
                       properties: {
                         place: { $ref: "#/components/schemas/Place" },
                         region: { $ref: "#/components/schemas/Region" },
+                        matchInfo: { $ref: "#/components/schemas/MatchInfo" },
                       },
                     },
                   },
@@ -196,6 +269,14 @@ export const swaggerDocument: JsonObject = {
           },
           "401": { description: "인증 필요" },
           "404": { description: "주변에 매칭 가능한 관광지 없음" },
+          "429": {
+            description: "일일 매칭 횟수 초과 (3회)",
+            content: {
+              "application/json": {
+                schema: { $ref: "#/components/schemas/Error" },
+              },
+            },
+          },
         },
       },
     },
@@ -204,7 +285,9 @@ export const swaggerDocument: JsonObject = {
         tags: ["Mission"],
         summary: "방문 인증 (체크인)",
         description:
-          "클라이언트의 현재 GPS와 목적지 좌표를 비교하여 반경 500m 이내일 경우 도장을 부여합니다. 같은 장소에 하루 1회만 체크인 가능합니다.",
+          "클라이언트의 현재 GPS와 목적지 좌표를 비교하여 반경 500m 이내일 경우 도장을 부여합니다.\n\n" +
+          "- 같은 장소에 하루 1회만 체크인 가능\n" +
+          "- **인구감소지역은 보상 2배** (도장 2개 획득)",
         security: [{ BearerAuth: [] }],
         requestBody: {
           required: true,
@@ -242,17 +325,12 @@ export const swaggerDocument: JsonObject = {
                   type: "object",
                   properties: {
                     success: { type: "boolean", example: true },
-                    message: { type: "string", example: "🎉 경복궁 방문 인증 완료!" },
-                    stamp: {
-                      type: "object",
-                      properties: {
-                        id: { type: "string" },
-                        placeName: { type: "string" },
-                        regionName: { type: "string" },
-                        checkedInAt: { type: "string", format: "date-time" },
-                        totalStamps: { type: "integer" },
-                      },
+                    message: {
+                      type: "string",
+                      example:
+                        "🎉 경복궁 방문 인증 완료! 🌟 로컬 상생 지역 보너스! 도장 2개 획득!",
                     },
+                    stamp: { $ref: "#/components/schemas/StampResult" },
                   },
                 },
               },
@@ -307,7 +385,11 @@ export const swaggerDocument: JsonObject = {
                               isDepopulated: { type: "boolean" },
                               isVisited: { type: "boolean" },
                               visitCount: { type: "integer" },
-                              lastVisitedAt: { type: "string", format: "date-time", nullable: true },
+                              lastVisitedAt: {
+                                type: "string",
+                                format: "date-time",
+                                nullable: true,
+                              },
                             },
                           },
                         },
@@ -326,7 +408,8 @@ export const swaggerDocument: JsonObject = {
       get: {
         tags: ["Ranking"],
         summary: "유저 랭킹 TOP 10",
-        description: "전체 사용자 도장 개수 기준 실시간 상위 TOP 10 유저를 반환합니다.",
+        description:
+          "전체 사용자 도장 개수 기준 실시간 상위 TOP 10 유저를 반환합니다.",
         responses: {
           "200": {
             description: "랭킹 조회 성공",
@@ -360,7 +443,8 @@ export const swaggerDocument: JsonObject = {
       get: {
         tags: ["Ranking"],
         summary: "인기 지역 TOP 10",
-        description: "최근 1주일간 가장 많이 체크인된 지역 TOP 10을 반환합니다.",
+        description:
+          "최근 1주일간 가장 많이 체크인된 지역 TOP 10을 반환합니다. 숨겨진 지역이 랭킹에 올라가는 트렌드를 시각화합니다.",
         responses: {
           "200": {
             description: "랭킹 조회 성공",
@@ -379,8 +463,78 @@ export const swaggerDocument: JsonObject = {
                           regionId: { type: "string" },
                           sidoName: { type: "string" },
                           sigunguName: { type: "string" },
+                          isDepopulated: { type: "boolean" },
                           visitCount: { type: "integer" },
                         },
+                      },
+                    },
+                  },
+                },
+              },
+            },
+          },
+        },
+      },
+    },
+    "/api/ranking/me": {
+      get: {
+        tags: ["Ranking"],
+        summary: "내 랭킹 조회",
+        description:
+          "현재 로그인한 사용자의 전체 유저 중 순위를 조회합니다. TOP 10 밖이어도 정확한 순위와 상위 N% 정보를 제공합니다.",
+        security: [{ BearerAuth: [] }],
+        responses: {
+          "200": {
+            description: "내 랭킹 조회 성공",
+            content: {
+              "application/json": {
+                schema: {
+                  type: "object",
+                  properties: {
+                    success: { type: "boolean", example: true },
+                    data: { $ref: "#/components/schemas/MyRank" },
+                  },
+                },
+              },
+            },
+          },
+          "401": { description: "인증 필요" },
+        },
+      },
+    },
+    "/api/feed/recent": {
+      get: {
+        tags: ["Feed"],
+        summary: "실시간 활동 피드",
+        description:
+          "전체 유저의 최근 체크인 활동 내역을 조회합니다. 홈 화면 상단 실시간 알림 티커에 사용됩니다.\n\n" +
+          "인증 없이 조회 가능합니다.",
+        parameters: [
+          {
+            name: "limit",
+            in: "query",
+            required: false,
+            schema: { type: "integer", default: 20, minimum: 1, maximum: 50 },
+            description: "조회할 피드 개수 (기본값: 20, 최대: 50)",
+          },
+        ],
+        responses: {
+          "200": {
+            description: "피드 조회 성공",
+            content: {
+              "application/json": {
+                schema: {
+                  type: "object",
+                  properties: {
+                    success: { type: "boolean", example: true },
+                    data: {
+                      type: "object",
+                      properties: {
+                        items: {
+                          type: "array",
+                          items: { $ref: "#/components/schemas/FeedItem" },
+                        },
+                        totalCount: { type: "integer", example: 150 },
                       },
                     },
                   },

@@ -8,6 +8,7 @@ import matchRoutes from "./routes/match.routes.js";
 import missionRoutes from "./routes/mission.routes.js";
 import passportRoutes from "./routes/passport.routes.js";
 import rankingRoutes from "./routes/ranking.routes.js";
+import feedRoutes from "./routes/feed.routes.js";
 import { startSyncPlacesJob } from "./jobs/syncPlaces.job.js";
 
 // 환경변수 검증
@@ -45,6 +46,7 @@ app.use("/api/match", matchRoutes);
 app.use("/api/mission", missionRoutes);
 app.use("/api/passport", passportRoutes);
 app.use("/api/ranking", rankingRoutes);
+app.use("/api/feed", feedRoutes);
 
 // ============================================
 // 크론잡 등록

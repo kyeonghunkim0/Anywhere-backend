@@ -12,7 +12,17 @@ interface PlaceRankItem {
   regionId: string;
   sidoName: string;
   sigunguName: string;
+  isDepopulated: boolean;
   visitCount: number;
+}
+
+interface MyRankResult {
+  rank: number;
+  totalUsers: number;
+  userId: string;
+  nickname: string;
+  totalStamps: number;
+  topPercentage: number; // 상위 N%
 }
 
 /**
@@ -74,7 +84,47 @@ export async function getPlaceRanking(): Promise<PlaceRankItem[]> {
       regionId: item.regionId,
       sidoName: region?.sidoName ?? "",
       sigunguName: region?.sigunguName ?? "",
+      isDepopulated: region?.isDepopulated ?? false,
       visitCount: item._count.id,
     };
   });
+}
+
+/**
+ * 내 랭킹 조회
+ * - 전체 유저 중 내 순위를 계산하여 반환
+ * - 상위 N% 정보 포함
+ */
+export async function getMyRanking(userId: string): Promise<MyRankResult> {
+  const user = await prisma.user.findUnique({
+    where: { id: userId },
+    select: { id: true, nickname: true, totalStamps: true },
+  });
+
+  if (!user) {
+    throw new Error("존재하지 않는 사용자입니다.");
+  }
+
+  // 나보다 도장이 많은 유저 수 = 내 순위 - 1
+  const usersAbove = await prisma.user.count({
+    where: {
+      totalStamps: { gt: user.totalStamps },
+    },
+  });
+
+  const totalUsers = await prisma.user.count();
+
+  const rank = usersAbove + 1;
+  const topPercentage = totalUsers > 0
+    ? Math.round((rank / totalUsers) * 1000) / 10
+    : 0;
+
+  return {
+    rank,
+    totalUsers,
+    userId: user.id,
+    nickname: user.nickname,
+    totalStamps: user.totalStamps,
+    topPercentage,
+  };
 }

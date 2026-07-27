@@ -1,5 +1,8 @@
 import { PrismaClient } from "../generated/prisma/client.js";
 import { PrismaPg } from "@prisma/adapter-pg";
+import dotenv from "dotenv";
+
+dotenv.config();
 
 // Prisma Client 싱글턴 패턴
 // 개발 환경에서 핫 리로딩 시 PrismaClient 인스턴스가 중복 생성되는 것을 방지

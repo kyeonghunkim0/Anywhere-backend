@@ -15,6 +15,9 @@ interface CheckInResult {
     id: string;
     placeName: string;
     regionName: string;
+    isDepopulated: boolean;
+    bonusMultiplier: number; // 1 = 일반, 2 = 인구감소지역 보상 2배
+    stampsEarned: number; // 이번에 획득한 도장 수
     checkedInAt: Date;
     totalStamps: number;
   };
@@ -25,7 +28,8 @@ interface CheckInResult {
  * 1. 목적지 좌표를 DB에서 조회
  * 2. 현재 GPS와 목적지 GPS를 Haversine 공식으로 거리 계산
  * 3. 반경 500m 이내일 경우에만 체크인 성공
- * 4. UserStamp INSERT + 유저 도장 카운트 +1
+ * 4. UserStamp INSERT + 유저 도장 카운트 업데이트
+ * 5. 인구감소지역이면 보상 2배 (도장 +2)
  */
 export async function checkIn(input: CheckInInput): Promise<CheckInResult> {
   const { userId, placeId, userLat, userLng } = input;
@@ -77,7 +81,12 @@ export async function checkIn(input: CheckInInput): Promise<CheckInResult> {
     };
   }
 
-  // 4. 트랜잭션으로 도장 기록 + 카운트 업데이트
+  // 4. 인구감소지역 보상 2배 적용
+  const isDepopulated = place.region.isDepopulated;
+  const bonusMultiplier = isDepopulated ? 2 : 1;
+  const stampsEarned = bonusMultiplier; // 일반 1개, 인구감소지역 2개
+
+  // 5. 트랜잭션으로 도장 기록 + 카운트 업데이트
   const [stamp, updatedUser] = await prisma.$transaction([
     prisma.userStamp.create({
       data: {
@@ -88,17 +97,24 @@ export async function checkIn(input: CheckInInput): Promise<CheckInResult> {
     }),
     prisma.user.update({
       where: { id: userId },
-      data: { totalStamps: { increment: 1 } },
+      data: { totalStamps: { increment: stampsEarned } },
     }),
   ]);
 
+  const bonusMessage = isDepopulated
+    ? `🌟 로컬 상생 지역 보너스! 도장 ${stampsEarned}개 획득!`
+    : `도장 ${stampsEarned}개 획득!`;
+
   return {
     success: true,
-    message: `🎉 ${place.name} 방문 인증 완료! 도장을 획득했습니다!`,
+    message: `🎉 ${place.name} 방문 인증 완료! ${bonusMessage}`,
     stamp: {
       id: stamp.id,
       placeName: place.name,
       regionName: `${place.region.sidoName} ${place.region.sigunguName}`,
+      isDepopulated,
+      bonusMultiplier,
+      stampsEarned,
       checkedInAt: stamp.checkedInAt,
       totalStamps: updatedUser.totalStamps,
     },

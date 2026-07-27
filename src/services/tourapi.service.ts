@@ -23,21 +23,18 @@ async function fetchPlacesByRegion(
   sigunguCode: string
 ): Promise<TourApiItem[]> {
   try {
-    const response = await axios.get(`${TOUR_API_BASE}/areaBasedList2`, {
+    const url = `${TOUR_API_BASE}/areaBasedList2?serviceKey=${env.TOUR_API_KEY}`;
+    const response = await axios.get(url, {
       params: {
-        serviceKey: decodeURIComponent(env.TOUR_API_KEY), // Encoding/Decoding 키 모두 안전하게 처리
         numOfRows: 100,
         pageNo: 1,
         MobileOS: "ETC",
         MobileApp: "Anywhere",
         _type: "json",
         contentTypeId: 12, // 12: 관광지
-        lDongRegnCd: areaCode, // KorService2 신규 스펙: 법정동 시도 코드
-        lDongSignguCd: sigunguCode, // KorService2 신규 스펙: 법정동 시군구 코드
-        areaCode, // 기존 호환용
-        sigunguCode, // 기존 호환용
-        listYN: "Y",
-        arrange: "A", // A: 제목순
+        lDongRegnCd: areaCode,
+        lDongSignguCd: sigunguCode,
+        arrange: "A",
       },
     });
 

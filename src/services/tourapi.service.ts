@@ -25,7 +25,7 @@ async function fetchPlacesByRegion(
   try {
     const response = await axios.get(`${TOUR_API_BASE}/areaBasedList1`, {
       params: {
-        serviceKey: env.TOUR_API_KEY, // Decoding 인증키 권장
+        serviceKey: decodeURIComponent(env.TOUR_API_KEY), // Encoding/Decoding 키 모두 안전하게 처리
         numOfRows: 100,
         pageNo: 1,
         MobileOS: "ETC",

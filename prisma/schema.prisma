@@ -22,7 +22,8 @@ model User {
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
 
-  stamps UserStamp[]
+  stamps        UserStamp[]
+  matchHistory  MatchHistory[]
 
   @@map("users")
 }
@@ -62,7 +63,8 @@ model Place {
   regionId String
   region   Region @relation(fields: [regionId], references: [id])
 
-  stamps UserStamp[]
+  stamps      UserStamp[]
+  matchHistory MatchHistory[]
 
   @@index([regionId])
   @@map("places")
@@ -90,3 +92,21 @@ model UserStamp {
   @@index([checkedInAt])
   @@map("user_stamps")
 }
+
+// ============================================
+// 매칭 이력 (MatchHistory Table) - 일 3회 제한 추적
+// ============================================
+model MatchHistory {
+  id        String   @id @default(cuid())
+  matchedAt DateTime @default(now())
+
+  userId String
+  user   User   @relation(fields: [userId], references: [id])
+
+  placeId String
+  place   Place  @relation(fields: [placeId], references: [id])
+
+  @@index([userId, matchedAt])
+  @@map("match_histories")
+}
+

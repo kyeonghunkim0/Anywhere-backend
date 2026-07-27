@@ -32,8 +32,10 @@ async function fetchPlacesByRegion(
         MobileApp: "Anywhere",
         _type: "json",
         contentTypeId: 12, // 12: 관광지
-        areaCode,
-        sigunguCode,
+        lDongRegnCd: areaCode, // KorService2 신규 스펙: 법정동 시도 코드
+        lDongSignguCd: sigunguCode, // KorService2 신규 스펙: 법정동 시군구 코드
+        areaCode, // 기존 호환용
+        sigunguCode, // 기존 호환용
         listYN: "Y",
         arrange: "A", // A: 제목순
       },

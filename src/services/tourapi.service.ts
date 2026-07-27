@@ -25,17 +25,17 @@ async function fetchPlacesByRegion(
   try {
     const response = await axios.get(`${TOUR_API_BASE}/areaBasedList1`, {
       params: {
-        serviceKey: env.TOUR_API_KEY,
+        serviceKey: env.TOUR_API_KEY, // Decoding 인증키 권장
         numOfRows: 100,
         pageNo: 1,
         MobileOS: "ETC",
         MobileApp: "Anywhere",
         _type: "json",
-        contentTypeId: 12, // 관광지
+        contentTypeId: 12, // 12: 관광지
         areaCode,
         sigunguCode,
         listYN: "Y",
-        arrange: "Q", // 제목순
+        arrange: "A", // A: 제목순
       },
     });
 

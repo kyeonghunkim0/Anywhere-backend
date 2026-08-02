@@ -14,8 +14,12 @@ export const swaggerDocument: JsonObject = {
       "- 📍 GPS 기반 반경 500m 체크인 (인구감소지역 보상 2배)\n" +
       "- 📘 228개 지역 여권(도장) 수집 현황\n" +
       "- 🏆 유저 / 인기 지역 랭킹 + 내 랭킹 조회\n" +
-      "- 📢 실시간 활동 피드",
-    version: "1.1.0",
+      "- 📢 실시간 활동 피드\n" +
+      "- 🏷️ 홈 화면 큐레이션 해시태그\n" +
+      "- 🎖️ 스페셜(시즌 한정) & 로컬 히든 뱃지\n" +
+      "- 🌱 지역 로컬 성장 게이지 (레벨업)\n" +
+      "- 👤 유저 프로필 / 설정 / 랭커 상세",
+    version: "1.2.0",
     contact: {
       name: "Anywhere Team",
     },
@@ -33,6 +37,11 @@ export const swaggerDocument: JsonObject = {
     { name: "Passport", description: "여권 (도장 수집 현황)" },
     { name: "Ranking", description: "랭킹" },
     { name: "Feed", description: "실시간 활동 피드" },
+    { name: "Tags", description: "홈 화면 큐레이션 해시태그" },
+    { name: "Badges", description: "스페셜(시즌 한정) & 로컬 히든 뱃지" },
+    { name: "Regions", description: "지역 로컬 성장 게이지" },
+    { name: "Users", description: "유저 프로필 / 설정 / 랭커 상세" },
+    { name: "App", description: "앱 정보 (버전 / 점검 상태)" },
   ],
   components: {
     securitySchemes: {
@@ -542,6 +551,198 @@ export const swaggerDocument: JsonObject = {
               },
             },
           },
+        },
+      },
+    },
+    "/api/tags": {
+      get: {
+        tags: ["Tags"],
+        summary: "큐레이션 해시태그 목록",
+        description: "홈 화면 상단에 노출되는 감성 해시태그 칩 목록입니다 (예: #밤하늘_별맛집).",
+        responses: {
+          "200": { description: "조회 성공" },
+        },
+      },
+    },
+    "/api/tags/{tagId}/places": {
+      get: {
+        tags: ["Tags"],
+        summary: "해시태그별 관광지 목록",
+        parameters: [
+          { name: "tagId", in: "path", required: true, schema: { type: "string" } },
+        ],
+        responses: {
+          "200": { description: "조회 성공" },
+        },
+      },
+    },
+    "/api/badges/me": {
+      get: {
+        tags: ["Badges"],
+        summary: "내 뱃지 현황",
+        description:
+          "스페셜(시즌 한정) & 로컬 히든 뱃지 전체 현황을 조회합니다.\n\n" +
+          "- 미획득 히든 뱃지는 좌표가 노출되지 않습니다 (수집 재미 보호)\n" +
+          "- 시즌 한정 뱃지는 마감까지 남은 일수(daysRemaining, D-day)를 포함합니다",
+        security: [{ BearerAuth: [] }],
+        responses: {
+          "200": { description: "조회 성공" },
+          "401": { description: "인증 필요" },
+        },
+      },
+    },
+    "/api/badges/seasonal": {
+      get: {
+        tags: ["Badges"],
+        summary: "진행 중인 시즌 한정 뱃지",
+        description: "홈 화면 [스페셜 퀘스트] 캐러셀에 노출되는 활성 시즌 한정 뱃지 목록입니다.",
+        responses: {
+          "200": { description: "조회 성공" },
+        },
+      },
+    },
+    "/api/regions/growth": {
+      get: {
+        tags: ["Regions"],
+        summary: "레벨업 임박 로컬 리스트",
+        description: "다음 레벨까지 방문이 가장 적게 남은 인구감소지역 순으로 정렬하여 반환합니다.",
+        parameters: [
+          { name: "limit", in: "query", required: false, schema: { type: "integer", default: 10 } },
+        ],
+        responses: {
+          "200": { description: "조회 성공" },
+        },
+      },
+    },
+    "/api/regions/{regionId}": {
+      get: {
+        tags: ["Regions"],
+        summary: "지역 상세 (로컬 성장 게이지)",
+        description: "지역 레벨, 다음 레벨까지 진행률, 방문 통계, 레벨별 보상 달성 현황을 반환합니다.",
+        parameters: [
+          { name: "regionId", in: "path", required: true, schema: { type: "string" } },
+        ],
+        responses: {
+          "200": { description: "조회 성공" },
+          "404": { description: "존재하지 않는 지역" },
+        },
+      },
+    },
+    "/api/users/me": {
+      get: {
+        tags: ["Users"],
+        summary: "내 프로필 조회",
+        security: [{ BearerAuth: [] }],
+        responses: {
+          "200": { description: "조회 성공" },
+          "401": { description: "인증 필요" },
+        },
+      },
+      patch: {
+        tags: ["Users"],
+        summary: "프로필 편집 (닉네임 / 프로필 이미지)",
+        security: [{ BearerAuth: [] }],
+        requestBody: {
+          content: {
+            "application/json": {
+              schema: {
+                type: "object",
+                properties: {
+                  nickname: { type: "string", maxLength: 12 },
+                  profileImage: { type: "string" },
+                },
+              },
+            },
+          },
+        },
+        responses: {
+          "200": { description: "저장 성공" },
+          "400": { description: "닉네임 12자 초과" },
+          "401": { description: "인증 필요" },
+        },
+      },
+    },
+    "/api/users/me/settings": {
+      patch: {
+        tags: ["Users"],
+        summary: "설정 - 푸시 알림 on/off",
+        security: [{ BearerAuth: [] }],
+        requestBody: {
+          required: true,
+          content: {
+            "application/json": {
+              schema: {
+                type: "object",
+                required: ["pushEnabled"],
+                properties: { pushEnabled: { type: "boolean" } },
+              },
+            },
+          },
+        },
+        responses: {
+          "200": { description: "저장 성공" },
+          "401": { description: "인증 필요" },
+        },
+      },
+    },
+    "/api/app/info": {
+      get: {
+        tags: ["App"],
+        summary: "앱 정보 조회 (버전 / 점검 상태)",
+        description:
+          "앱 최초 실행 시 호출하여 강제 업데이트 여부와 서비스 점검 상태를 확인합니다.\n\n" +
+          "- `version` 쿼리 파라미터로 클라이언트 버전을 전달하면 `forceUpdate` 여부를 계산합니다\n" +
+          "- 인증이 필요하지 않습니다",
+        parameters: [
+          {
+            name: "version",
+            in: "query",
+            required: false,
+            schema: { type: "string", example: "1.0.0" },
+            description: "클라이언트 앱 버전",
+          },
+        ],
+        responses: {
+          "200": {
+            description: "조회 성공",
+            content: {
+              "application/json": {
+                schema: {
+                  type: "object",
+                  properties: {
+                    success: { type: "boolean", example: true },
+                    data: {
+                      type: "object",
+                      properties: {
+                        appName: { type: "string", example: "아무데나" },
+                        latestVersion: { type: "string", example: "1.2.0" },
+                        minVersion: { type: "string", example: "1.0.0" },
+                        forceUpdate: { type: "boolean", example: false },
+                        maintenanceMode: { type: "boolean", example: false },
+                        maintenanceMessage: { type: "string", nullable: true },
+                        serverTime: { type: "string", format: "date-time" },
+                      },
+                    },
+                  },
+                },
+              },
+            },
+          },
+        },
+      },
+    },
+    "/api/users/{userId}/detail": {
+      get: {
+        tags: ["Users"],
+        summary: "랭커 상세 (활동 그래프 + 대표 도장)",
+        description: "랭킹 리스트에서 특정 유저를 탭했을 때 노출되는 여권형 대시보드입니다.",
+        security: [{ BearerAuth: [] }],
+        parameters: [
+          { name: "userId", in: "path", required: true, schema: { type: "string" } },
+        ],
+        responses: {
+          "200": { description: "조회 성공" },
+          "404": { description: "존재하지 않는 사용자" },
         },
       },
     },

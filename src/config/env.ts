@@ -9,6 +9,13 @@ export const env = {
   JWT_EXPIRES_IN: process.env.JWT_EXPIRES_IN || "7d",
   TOUR_API_KEY: process.env.TOUR_API_KEY || "",
   SYNC_CRON_SCHEDULE: process.env.SYNC_CRON_SCHEDULE || "0 3 * * *",
+
+  // 앱 정보 (최초 실행 시 클라이언트 버전/점검 상태 확인용)
+  APP_LATEST_VERSION: process.env.APP_LATEST_VERSION || "1.0.0",
+  APP_MIN_VERSION: process.env.APP_MIN_VERSION || "1.0.0", // 이 버전 미만은 강제 업데이트
+  MAINTENANCE_MODE: process.env.MAINTENANCE_MODE === "true",
+  MAINTENANCE_MESSAGE:
+    process.env.MAINTENANCE_MESSAGE || "서비스 점검 중입니다. 잠시 후 다시 이용해주세요.",
 } as const;
 
 // 필수 환경변수 검증

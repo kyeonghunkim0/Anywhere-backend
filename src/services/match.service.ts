@@ -8,6 +8,7 @@ interface MatchInput {
   userLat: number;
   userLng: number;
   radiusKm?: number; // 기본값: 50km
+  tagId?: string; // 큐레이션 해시태그 필터 (예: #밤하늘_별맛집)
 }
 
 interface MatchResult {
@@ -40,7 +41,7 @@ interface MatchResult {
  * - 이미 방문한 장소는 우선순위를 낮춤
  */
 export async function getRandomMatch(input: MatchInput): Promise<MatchResult | null> {
-  const { userId, userLat, userLng, radiusKm = 50 } = input;
+  const { userId, userLat, userLng, radiusKm = 50, tagId } = input;
 
   // 0. 일일 매칭 횟수 체크
   const todayCount = await getTodayMatchCount(userId);
@@ -50,8 +51,9 @@ export async function getRandomMatch(input: MatchInput): Promise<MatchResult | n
     );
   }
 
-  // 1. 전체 관광지를 region 정보와 함께 조회
+  // 1. 전체 관광지를 region 정보와 함께 조회 (큐레이션 태그 선택 시 해당 태그로 필터링)
   const allPlaces = await prisma.place.findMany({
+    where: tagId ? { tags: { some: { tagId } } } : undefined,
     include: {
       region: true,
     },

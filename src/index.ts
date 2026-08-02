@@ -9,6 +9,11 @@ import missionRoutes from "./routes/mission.routes.js";
 import passportRoutes from "./routes/passport.routes.js";
 import rankingRoutes from "./routes/ranking.routes.js";
 import feedRoutes from "./routes/feed.routes.js";
+import tagRoutes from "./routes/tag.routes.js";
+import badgeRoutes from "./routes/badge.routes.js";
+import regionRoutes from "./routes/region.routes.js";
+import userRoutes from "./routes/user.routes.js";
+import appRoutes from "./routes/app.routes.js";
 import { startSyncPlacesJob } from "./jobs/syncPlaces.job.js";
 
 // 환경변수 검증
@@ -47,6 +52,11 @@ app.use("/api/mission", missionRoutes);
 app.use("/api/passport", passportRoutes);
 app.use("/api/ranking", rankingRoutes);
 app.use("/api/feed", feedRoutes);
+app.use("/api/tags", tagRoutes);
+app.use("/api/badges", badgeRoutes);
+app.use("/api/regions", regionRoutes);
+app.use("/api/users", userRoutes);
+app.use("/api/app", appRoutes);
 
 // ============================================
 // 크론잡 등록

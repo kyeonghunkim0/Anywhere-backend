@@ -14,16 +14,19 @@ datasource db {
 // 사용자 (Users Table)
 // ============================================
 model User {
-  id          String   @id @default(cuid())
-  nickname    String
-  socialType  String   // "apple" | "kakao"
-  socialId    String   @unique // 소셜 로그인 고유 ID
-  totalStamps Int      @default(0)
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
+  id           String   @id @default(cuid())
+  nickname     String
+  socialType   String   // "apple" | "kakao"
+  socialId     String   @unique // 소셜 로그인 고유 ID
+  totalStamps  Int      @default(0)
+  profileImage String?
+  pushEnabled  Boolean  @default(true)
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
 
   stamps        UserStamp[]
   matchHistory  MatchHistory[]
+  badges        UserBadge[]
 
   @@map("users")
 }
@@ -41,8 +44,13 @@ model Region {
   centerLat     Float   // 중심 위도
   centerLng     Float   // 중심 경도
 
+  level         Int     @default(1) // 로컬 성장 게이지 - 누적 방문으로 상승하는 지역 레벨
+  visitCount    Int     @default(0) // 누적 방문(체크인) 횟수 - 레벨 계산용 카운터
+  quote         String? // 주민 한마디 (여권 지역 상세용 플레이버 텍스트)
+
   places Place[]
   stamps UserStamp[]
+  badges Badge[]
 
   @@unique([areaCode, sigunguCode])
   @@map("regions")
@@ -65,6 +73,8 @@ model Place {
 
   stamps      UserStamp[]
   matchHistory MatchHistory[]
+  tags         PlaceTag[]
+  badges       Badge[]
 
   @@index([regionId])
   @@map("places")
@@ -74,8 +84,9 @@ model Place {
 // 방문 기록 (User_Stamps Table)
 // ============================================
 model UserStamp {
-  id          String   @id @default(cuid())
-  checkedInAt DateTime @default(now())
+  id            String   @id @default(cuid())
+  checkedInAt   DateTime @default(now())
+  visitorNumber Int      // 해당 지역(region)의 N번째 방문자 각인 (체크인 시점 지역 누적 방문 순번)
 
   userId String
   user   User   @relation(fields: [userId], references: [id])
@@ -108,5 +119,84 @@ model MatchHistory {
 
   @@index([userId, matchedAt])
   @@map("match_histories")
+}
+
+// ============================================
+// 큐레이션 해시태그 (Tags Table) - 홈 화면 감성 태그 칩
+// ============================================
+model Tag {
+  id    String  @id @default(cuid())
+  label String  @unique // 예: "#밤하늘_별맛집"
+  emoji String?
+
+  places PlaceTag[]
+
+  @@map("tags")
+}
+
+// ============================================
+// 관광지 - 태그 매핑 (Place_Tags Table)
+// ============================================
+model PlaceTag {
+  placeId String
+  place   Place  @relation(fields: [placeId], references: [id])
+
+  tagId String
+  tag   Tag    @relation(fields: [tagId], references: [id])
+
+  @@id([placeId, tagId])
+  @@index([tagId])
+  @@map("place_tags")
+}
+
+// ============================================
+// 뱃지 마스터 (Badges Table) - 시즌 한정 & 로컬 히든 퀘스트
+// ============================================
+model Badge {
+  id          String    @id @default(cuid())
+  key         String    @unique // 코드성 식별자 (예: "jinhae_2026_spring")
+  name        String    // 예: "진해 군항제 한정 벚꽃 뱃지"
+  description String
+  icon        String
+
+  type String // "SEASONAL"(시즌 한정) | "HIDDEN"(로컬 히든 마이크로 스팟) | "REGION"(지역 레벨업 보상)
+
+  startAt DateTime? // 시즌 한정 뱃지 활성화 시작일
+  endAt   DateTime? // 시즌 한정 뱃지 마감일 (D-day 계산 기준)
+
+  lat     Float? // 히든 퀘스트 마이크로 스팟 위도
+  lng     Float? // 히든 퀘스트 마이크로 스팟 경도
+  radiusM Int?   // 히든 퀘스트 인증 반경 (미터, 기본 10~20m)
+
+  placeId String?
+  place   Place?  @relation(fields: [placeId], references: [id])
+
+  regionId String?
+  region   Region? @relation(fields: [regionId], references: [id])
+
+  createdAt DateTime @default(now())
+
+  userBadges UserBadge[]
+
+  @@index([type])
+  @@map("badges")
+}
+
+// ============================================
+// 유저 획득 뱃지 (User_Badges Table)
+// ============================================
+model UserBadge {
+  id       String   @id @default(cuid())
+  earnedAt DateTime @default(now())
+
+  userId String
+  user   User   @relation(fields: [userId], references: [id])
+
+  badgeId String
+  badge   Badge   @relation(fields: [badgeId], references: [id])
+
+  @@unique([userId, badgeId])
+  @@index([userId])
+  @@map("user_badges")
 }
 

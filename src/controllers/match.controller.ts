@@ -16,6 +16,7 @@ export async function getRandomMatchController(req: AuthRequest, res: Response):
     const lat = parseFloat(req.query.lat as string);
     const lng = parseFloat(req.query.lng as string);
     const radiusKm = req.query.radiusKm ? parseFloat(req.query.radiusKm as string) : undefined;
+    const tagId = req.query.tagId as string | undefined;
 
     if (isNaN(lat) || isNaN(lng)) {
       res.status(400).json({
@@ -25,7 +26,7 @@ export async function getRandomMatchController(req: AuthRequest, res: Response):
       return;
     }
 
-    const result = await getRandomMatch({ userId, userLat: lat, userLng: lng, radiusKm });
+    const result = await getRandomMatch({ userId, userLat: lat, userLng: lng, radiusKm, tagId });
 
     if (!result) {
       res.status(404).json({

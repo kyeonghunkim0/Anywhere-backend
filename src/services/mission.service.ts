@@ -1,11 +1,19 @@
 import { prisma } from "../utils/prisma.js";
 import { isWithinRadius } from "../utils/haversine.js";
+import { getRegionLevel } from "../utils/gamification.js";
 
 interface CheckInInput {
   userId: string;
   placeId: string;
   userLat: number;
   userLng: number;
+}
+
+interface EarnedBadge {
+  id: string;
+  key: string;
+  name: string;
+  icon: string;
 }
 
 interface CheckInResult {
@@ -20,7 +28,11 @@ interface CheckInResult {
     stampsEarned: number; // 이번에 획득한 도장 수
     checkedInAt: Date;
     totalStamps: number;
+    visitorNumber: number; // 해당 지역의 N번째 방문자 각인
+    regionLevel: number; // 체크인 반영 후 지역 레벨
+    regionLeveledUp: boolean; // 이번 체크인으로 지역이 레벨업했는지 여부
   };
+  newBadges?: EarnedBadge[]; // 이번 체크인으로 새로 획득한 로컬 히든 뱃지
 }
 
 /**
@@ -86,13 +98,31 @@ export async function checkIn(input: CheckInInput): Promise<CheckInResult> {
   const bonusMultiplier = isDepopulated ? 2 : 1;
   const stampsEarned = bonusMultiplier; // 일반 1개, 인구감소지역 2개
 
-  // 5. 트랜잭션으로 도장 기록 + 카운트 업데이트
+  // 5. 지역 성장 게이지 갱신 (누적 방문 수 +1) + N번째 방문자 각인 번호 확정
+  const previousLevel = getRegionLevel(place.region.visitCount);
+  const updatedRegion = await prisma.region.update({
+    where: { id: place.regionId },
+    data: { visitCount: { increment: 1 } },
+  });
+  const visitorNumber = updatedRegion.visitCount;
+  const regionLevel = getRegionLevel(visitorNumber);
+  const regionLeveledUp = regionLevel > previousLevel;
+
+  if (regionLeveledUp) {
+    await prisma.region.update({
+      where: { id: place.regionId },
+      data: { level: regionLevel },
+    });
+  }
+
+  // 6. 트랜잭션으로 도장 기록 + 카운트 업데이트
   const [stamp, updatedUser] = await prisma.$transaction([
     prisma.userStamp.create({
       data: {
         userId,
         placeId,
         regionId: place.regionId,
+        visitorNumber,
       },
     }),
     prisma.user.update({
@@ -100,6 +130,15 @@ export async function checkIn(input: CheckInInput): Promise<CheckInResult> {
       data: { totalStamps: { increment: stampsEarned } },
     }),
   ]);
+
+  // 7. 로컬 히든 퀘스트 뱃지 판정 (반경 내 마이크로 스팟 접근 시 자동 획득)
+  const newBadges = await awardHiddenBadges({
+    userId,
+    userLat,
+    userLng,
+    placeId,
+    regionId: place.regionId,
+  });
 
   const bonusMessage = isDepopulated
     ? `🌟 로컬 상생 지역 보너스! 도장 ${stampsEarned}개 획득!`
@@ -117,6 +156,75 @@ export async function checkIn(input: CheckInInput): Promise<CheckInResult> {
       stampsEarned,
       checkedInAt: stamp.checkedInAt,
       totalStamps: updatedUser.totalStamps,
+      visitorNumber,
+      regionLevel,
+      regionLeveledUp,
     },
+    newBadges,
   };
+}
+
+/**
+ * 반경 내 활성화된 로컬 히든 퀘스트(마이크로 스팟) 뱃지를 판정하여 자동 지급
+ * - 특정 장소/지역에 결부된 히든 뱃지 중, 유저 GPS가 지정된 반경(radiusM) 이내이고
+ *   아직 획득하지 않은 뱃지를 획득 처리한다.
+ */
+async function awardHiddenBadges(input: {
+  userId: string;
+  userLat: number;
+  userLng: number;
+  placeId: string;
+  regionId: string;
+}): Promise<EarnedBadge[]> {
+  const { userId, userLat, userLng, placeId, regionId } = input;
+  const now = new Date();
+
+  const candidates = await prisma.badge.findMany({
+    where: {
+      type: "HIDDEN",
+      lat: { not: null },
+      lng: { not: null },
+      OR: [{ placeId }, { regionId, placeId: null }],
+      AND: [
+        { OR: [{ startAt: null }, { startAt: { lte: now } }] },
+        { OR: [{ endAt: null }, { endAt: { gte: now } }] },
+      ],
+    },
+  });
+
+  if (candidates.length === 0) return [];
+
+  const alreadyEarned = new Set(
+    (
+      await prisma.userBadge.findMany({
+        where: { userId, badgeId: { in: candidates.map((b) => b.id) } },
+        select: { badgeId: true },
+      })
+    ).map((ub) => ub.badgeId)
+  );
+
+  const earned: EarnedBadge[] = [];
+
+  for (const badge of candidates) {
+    if (alreadyEarned.has(badge.id)) continue;
+    if (badge.lat === null || badge.lng === null) continue;
+
+    const withinMicroSpot = isWithinRadius(
+      userLat,
+      userLng,
+      badge.lat,
+      badge.lng,
+      badge.radiusM ?? 20
+    );
+
+    if (!withinMicroSpot) continue;
+
+    await prisma.userBadge.create({
+      data: { userId, badgeId: badge.id },
+    });
+
+    earned.push({ id: badge.id, key: badge.key, name: badge.name, icon: badge.icon });
+  }
+
+  return earned;
 }

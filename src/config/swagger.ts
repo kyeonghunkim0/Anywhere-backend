@@ -65,7 +65,7 @@ export const swaggerDocument: JsonObject = {
         properties: {
           id: { type: "string", example: "clxyz123abc" },
           nickname: { type: "string", example: "여행자" },
-          socialType: { type: "string", enum: ["apple", "kakao"] },
+          socialType: { type: "string", enum: ["apple", "google"] },
           totalStamps: { type: "integer", example: 5 },
         },
       },
@@ -165,7 +165,7 @@ export const swaggerDocument: JsonObject = {
         tags: ["Auth"],
         summary: "소셜 로그인",
         description:
-          "Apple 또는 카카오 소셜 로그인을 처리합니다. 신규 유저는 자동 회원가입되며 JWT 토큰이 발급됩니다.",
+          "Apple 또는 Google 소셜 로그인을 처리합니다. 신규 유저는 자동 회원가입되며 JWT 토큰이 발급됩니다.",
         requestBody: {
           required: true,
           content: {
@@ -176,13 +176,13 @@ export const swaggerDocument: JsonObject = {
                 properties: {
                   socialType: {
                     type: "string",
-                    enum: ["apple", "kakao"],
+                    enum: ["apple", "google"],
                     description: "소셜 로그인 유형",
                   },
                   socialId: {
                     type: "string",
                     description: "소셜 플랫폼에서 받은 고유 ID",
-                    example: "kakao_123456",
+                    example: "google_123456",
                   },
                   nickname: {
                     type: "string",

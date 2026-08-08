@@ -6,7 +6,7 @@ import { loginWithSocial } from "../services/auth.service.js";
  * 
  * Request Body:
  * {
- *   "socialType": "apple" | "kakao",
+ *   "socialType": "apple" | "google",
  *   "socialId": "소셜 플랫폼에서 받은 고유 ID",
  *   "nickname": "(선택) 닉네임"
  * }
@@ -24,10 +24,10 @@ export async function loginController(req: Request, res: Response): Promise<void
       return;
     }
 
-    if (!["apple", "kakao"].includes(socialType)) {
+    if (!["apple", "google"].includes(socialType)) {
       res.status(400).json({
         success: false,
-        message: "socialType은 'apple' 또는 'kakao'만 가능합니다.",
+        message: "socialType은 'apple' 또는 'google'만 가능합니다.",
       });
       return;
     }

@@ -3,7 +3,7 @@ import { env } from "../config/env.js";
 import { prisma } from "../utils/prisma.js";
 
 interface LoginInput {
-  socialType: "apple" | "kakao";
+  socialType: "apple" | "google";
   socialId: string;
   nickname?: string;
 }

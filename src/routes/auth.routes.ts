@@ -5,7 +5,7 @@ const router = Router();
 
 /**
  * POST /api/auth/login
- * 소셜 로그인 (Apple / Kakao)
+ * 소셜 로그인 (Apple / Google)
  */
 router.post("/login", loginController);
 

@@ -1,5 +1,6 @@
 import { prisma } from "../utils/prisma.js";
 import { getUserLevel } from "../utils/gamification.js";
+import { getMyRanking } from "./ranking.service.js";
 
 interface UserProfile {
   id: string;
@@ -40,6 +41,81 @@ export async function getMyProfile(userId: string): Promise<UserProfile> {
   const user = await prisma.user.findUnique({ where: { id: userId } });
   if (!user) throw new Error("존재하지 않는 사용자입니다.");
   return toProfile(user);
+}
+
+interface ProfileStatsResult {
+  joinedAt: Date;
+  collectedRegions: number; // 수집 도시 (지역) 수
+  totalRegions: number; // 전국 기초자치단체 총 개수
+  depopulatedVisitedRegions: number; // 방문한 지역 중 인구감소지역 수
+  depopulatedVisitedPercent: number; // collectedRegions 대비 비율 (%)
+  totalDistanceKm: number; // 확정 여정을 통해 체크인한 누적 이동 거리
+  recentStamp: { placeName: string; regionName: string; checkedInAt: Date } | null;
+  badgeCount: number;
+  reviewCount: number;
+  nationalRank: number;
+  totalUsers: number;
+}
+
+/**
+ * 내 프로필 상세 통계 (프로필 화면 - 수집 도시/소멸지역 기여도/누적 이동/기록 섹션)
+ */
+export async function getMyProfileStats(userId: string): Promise<ProfileStatsResult> {
+  const user = await prisma.user.findUnique({ where: { id: userId } });
+  if (!user) throw new Error("존재하지 않는 사용자입니다.");
+
+  const [
+    totalRegions,
+    visitedRegionIds,
+    depopulatedVisitedRegions,
+    distanceAgg,
+    recentStamp,
+    badgeCount,
+    reviewCount,
+    myRanking,
+  ] = await Promise.all([
+    prisma.region.count(),
+    prisma.userStamp.findMany({ where: { userId }, distinct: ["regionId"], select: { regionId: true } }),
+    prisma.userStamp
+      .findMany({
+        where: { userId, region: { isDepopulated: true } },
+        distinct: ["regionId"],
+        select: { regionId: true },
+      })
+      .then((r) => r.length),
+    prisma.userStamp.aggregate({ where: { userId }, _sum: { distanceKm: true } }),
+    prisma.userStamp.findFirst({
+      where: { userId },
+      orderBy: { checkedInAt: "desc" },
+      include: { place: true, region: true },
+    }),
+    prisma.userBadge.count({ where: { userId } }),
+    prisma.review.count({ where: { userId } }),
+    getMyRanking(userId),
+  ]);
+
+  const collectedRegions = visitedRegionIds.length;
+
+  return {
+    joinedAt: user.createdAt,
+    collectedRegions,
+    totalRegions,
+    depopulatedVisitedRegions,
+    depopulatedVisitedPercent:
+      collectedRegions > 0 ? Math.round((depopulatedVisitedRegions / collectedRegions) * 1000) / 10 : 0,
+    totalDistanceKm: Math.round((distanceAgg._sum.distanceKm ?? 0) * 10) / 10,
+    recentStamp: recentStamp
+      ? {
+          placeName: recentStamp.place.name,
+          regionName: `${recentStamp.region.sidoName} ${recentStamp.region.sigunguName}`,
+          checkedInAt: recentStamp.checkedInAt,
+        }
+      : null,
+    badgeCount,
+    reviewCount,
+    nationalRank: myRanking.rank,
+    totalUsers: myRanking.totalUsers,
+  };
 }
 
 interface UpdateProfileInput {

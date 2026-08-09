@@ -714,6 +714,19 @@ export const swaggerDocument: JsonObject = {
         },
       },
     },
+    "/api/users/me/stats": {
+      get: {
+        tags: ["Users"],
+        summary: "프로필 화면 상세 통계",
+        description:
+          "수집 도시 수, 소멸지역 방문 비율, 누적 이동 거리, 최근 도장, 획득 뱃지 수, 작성 후기 수, 전국 랭킹을 반환합니다.",
+        security: [{ BearerAuth: [] }],
+        responses: {
+          "200": { description: "조회 성공" },
+          "401": { description: "인증 필요" },
+        },
+      },
+    },
     "/api/users/me/settings": {
       patch: {
         tags: ["Users"],

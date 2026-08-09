@@ -1,6 +1,7 @@
 import { Router } from "express";
 import {
   getMyProfileController,
+  getMyProfileStatsController,
   updateMyProfileController,
   updateMySettingsController,
   getRankerDetailController,
@@ -14,6 +15,12 @@ const router = Router();
  * 내 프로필 조회
  */
 router.get("/me", authMiddleware, getMyProfileController);
+
+/**
+ * GET /api/users/me/stats
+ * 프로필 화면 - 수집 도시 / 소멸지역 기여도 / 누적 이동 거리 / 기록 섹션
+ */
+router.get("/me/stats", authMiddleware, getMyProfileStatsController);
 
 /**
  * PATCH /api/users/me

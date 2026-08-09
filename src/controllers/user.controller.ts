@@ -2,6 +2,7 @@ import { Response } from "express";
 import { AuthRequest } from "../middlewares/auth.middleware.js";
 import {
   getMyProfile,
+  getMyProfileStats,
   updateMyProfile,
   updateMySettings,
   getRankerDetail,
@@ -22,6 +23,26 @@ export async function getMyProfileController(req: AuthRequest, res: Response): P
     res.json({ success: true, data: profile });
   } catch (error) {
     console.error("프로필 조회 에러:", error);
+    res.status(500).json({ success: false, message: "서버 오류가 발생했습니다." });
+  }
+}
+
+/**
+ * GET /api/users/me/stats
+ * 프로필 화면 - 수집 도시 / 소멸지역 기여도 / 누적 이동 거리 / 기록 섹션
+ */
+export async function getMyProfileStatsController(req: AuthRequest, res: Response): Promise<void> {
+  try {
+    const userId = req.user?.userId;
+    if (!userId) {
+      res.status(401).json({ success: false, message: "인증 정보가 없습니다." });
+      return;
+    }
+
+    const stats = await getMyProfileStats(userId);
+    res.json({ success: true, data: stats });
+  } catch (error) {
+    console.error("프로필 통계 조회 에러:", error);
     res.status(500).json({ success: false, message: "서버 오류가 발생했습니다." });
   }
 }

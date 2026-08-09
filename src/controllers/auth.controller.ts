@@ -3,23 +3,22 @@ import { loginWithSocial } from "../services/auth.service.js";
 
 /**
  * POST /api/auth/login
- * 
+ *
  * Request Body:
  * {
  *   "socialType": "apple" | "google",
- *   "socialId": "소셜 플랫폼에서 받은 고유 ID",
+ *   "idToken": "필수 — google: GIDGoogleUser.idToken.tokenString / apple: ASAuthorizationAppleIDCredential.identityToken",
  *   "nickname": "(선택) 닉네임"
  * }
  */
 export async function loginController(req: Request, res: Response): Promise<void> {
   try {
-    const { socialType, socialId, nickname } = req.body;
+    const { socialType, idToken, nickname } = req.body;
 
-    // 입력값 검증
-    if (!socialType || !socialId) {
+    if (!socialType) {
       res.status(400).json({
         success: false,
-        message: "socialType과 socialId는 필수입니다.",
+        message: "socialType은 필수입니다.",
       });
       return;
     }
@@ -32,7 +31,15 @@ export async function loginController(req: Request, res: Response): Promise<void
       return;
     }
 
-    const result = await loginWithSocial({ socialType, socialId, nickname });
+    if (!idToken) {
+      res.status(400).json({
+        success: false,
+        message: "idToken은 필수입니다.",
+      });
+      return;
+    }
+
+    const result = await loginWithSocial({ socialType, idToken, nickname });
 
     res.status(result.isNewUser ? 201 : 200).json({
       success: true,
@@ -44,6 +51,13 @@ export async function loginController(req: Request, res: Response): Promise<void
     });
   } catch (error) {
     console.error("로그인 에러:", error);
+    if (error instanceof Error && error.message.includes("idToken")) {
+      res.status(401).json({
+        success: false,
+        message: "idToken 검증에 실패했습니다.",
+      });
+      return;
+    }
     res.status(500).json({
       success: false,
       message: "서버 오류가 발생했습니다.",

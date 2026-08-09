@@ -1,10 +1,13 @@
 import jwt from "jsonwebtoken";
 import { env } from "../config/env.js";
 import { prisma } from "../utils/prisma.js";
+import { verifyGoogleIdToken } from "../utils/googleAuth.js";
+import { verifyAppleIdToken } from "../utils/appleAuth.js";
 
 interface LoginInput {
   socialType: "apple" | "google";
-  socialId: string;
+  /** google: GIDGoogleUser.idToken.tokenString / apple: ASAuthorizationAppleIDCredential.identityToken */
+  idToken: string;
   nickname?: string;
 }
 
@@ -25,7 +28,14 @@ interface AuthResult {
  * - 신규 유저: 회원가입 + JWT 발급
  */
 export async function loginWithSocial(input: LoginInput): Promise<AuthResult> {
-  const { socialType, socialId, nickname } = input;
+  const { socialType, idToken, nickname } = input;
+
+  // 클라이언트가 보낸 socialId는 스푸핑 가능하므로 신뢰하지 않고,
+  // 각 프로바이더의 공개키로 idToken을 검증해서 나온 sub만 socialId로 사용합니다.
+  const socialId =
+    socialType === "google"
+      ? (await verifyGoogleIdToken(idToken)).sub
+      : (await verifyAppleIdToken(idToken)).sub;
 
   // 기존 유저 조회
   let user = await prisma.user.findUnique({

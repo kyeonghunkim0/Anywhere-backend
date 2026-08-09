@@ -8,6 +8,8 @@ export const env = {
   JWT_SECRET: process.env.JWT_SECRET || "fallback-secret",
   JWT_EXPIRES_IN: process.env.JWT_EXPIRES_IN || "7d",
   TOUR_API_KEY: process.env.TOUR_API_KEY || "",
+  GOOGLE_CLIENT_ID: process.env.GOOGLE_CLIENT_ID || "",
+  APPLE_CLIENT_ID: process.env.APPLE_CLIENT_ID || "",
   SYNC_CRON_SCHEDULE: process.env.SYNC_CRON_SCHEDULE || "0 3 * * *",
 
   // 앱 정보 (최초 실행 시 클라이언트 버전/점검 상태 확인용)
@@ -20,7 +22,7 @@ export const env = {
 
 // 필수 환경변수 검증
 export function validateEnv(): void {
-  const required: (keyof typeof env)[] = ["JWT_SECRET"];
+  const required: (keyof typeof env)[] = ["JWT_SECRET", "GOOGLE_CLIENT_ID", "APPLE_CLIENT_ID"];
 
   for (const key of required) {
     if (!env[key]) {

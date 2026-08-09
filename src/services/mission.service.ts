@@ -115,6 +115,12 @@ export async function checkIn(input: CheckInInput): Promise<CheckInResult> {
     });
   }
 
+  // 5.5. 확정된 여정("여기로 결정")을 통한 체크인이면 도장에 연결해서 이동 거리 집계에 반영
+  const confirmedTrip = await prisma.matchHistory.findFirst({
+    where: { userId, placeId, confirmedAt: { not: null }, cancelledAt: null, stamp: null },
+    orderBy: { confirmedAt: "desc" },
+  });
+
   // 6. 트랜잭션으로 도장 기록 + 카운트 업데이트
   const [stamp, updatedUser] = await prisma.$transaction([
     prisma.userStamp.create({
@@ -123,6 +129,8 @@ export async function checkIn(input: CheckInInput): Promise<CheckInResult> {
         placeId,
         regionId: place.regionId,
         visitorNumber,
+        matchHistoryId: confirmedTrip?.id,
+        distanceKm: confirmedTrip?.distanceKm,
       },
     }),
     prisma.user.update({

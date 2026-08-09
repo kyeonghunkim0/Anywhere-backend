@@ -165,24 +165,25 @@ export const swaggerDocument: JsonObject = {
         tags: ["Auth"],
         summary: "소셜 로그인",
         description:
-          "Apple 또는 Google 소셜 로그인을 처리합니다. 신규 유저는 자동 회원가입되며 JWT 토큰이 발급됩니다.",
+          "Apple 또는 Google 소셜 로그인을 처리합니다. 신규 유저는 자동 회원가입되며 JWT 토큰이 발급됩니다. " +
+          "서버가 각 프로바이더의 공개키로 idToken을 검증해서 socialId(sub)를 직접 뽑아내며, 클라이언트가 보낸 socialId는 신뢰하지 않습니다.",
         requestBody: {
           required: true,
           content: {
             "application/json": {
               schema: {
                 type: "object",
-                required: ["socialType", "socialId"],
+                required: ["socialType", "idToken"],
                 properties: {
                   socialType: {
                     type: "string",
                     enum: ["apple", "google"],
                     description: "소셜 로그인 유형",
                   },
-                  socialId: {
+                  idToken: {
                     type: "string",
-                    description: "소셜 플랫폼에서 받은 고유 ID",
-                    example: "google_123456",
+                    description:
+                      "google: GIDGoogleUser.idToken.tokenString / apple: ASAuthorizationAppleIDCredential.identityToken",
                   },
                   nickname: {
                     type: "string",
@@ -266,6 +267,10 @@ export const swaggerDocument: JsonObject = {
                     data: {
                       type: "object",
                       properties: {
+                        matchId: {
+                          type: "string",
+                          description: "이 매칭을 확정(POST /api/match/{matchId}/confirm)할 때 사용",
+                        },
                         place: { $ref: "#/components/schemas/Place" },
                         region: { $ref: "#/components/schemas/Region" },
                         matchInfo: { $ref: "#/components/schemas/MatchInfo" },
@@ -286,6 +291,53 @@ export const swaggerDocument: JsonObject = {
               },
             },
           },
+        },
+      },
+    },
+    "/api/match/current": {
+      get: {
+        tags: ["Match"],
+        summary: "진행 중인 여정 조회",
+        description:
+          "홈 화면 [이동 중] 카드용. 확정됐지만 아직 체크인하지 않은 여정을 반환합니다. 없으면 data: null.",
+        security: [{ BearerAuth: [] }],
+        responses: {
+          "200": { description: "조회 성공 (여정 없으면 data: null)" },
+          "401": { description: "인증 필요" },
+        },
+      },
+    },
+    "/api/match/{matchId}/confirm": {
+      post: {
+        tags: ["Match"],
+        summary: "여정 확정 (\"여기로 결정\")",
+        description:
+          "매칭 후보를 진행 중인 여정으로 확정합니다. 기존에 확정된 다른 여정이 있으면 자동으로 취소됩니다.",
+        security: [{ BearerAuth: [] }],
+        parameters: [
+          { name: "matchId", in: "path", required: true, schema: { type: "string" } },
+        ],
+        responses: {
+          "200": { description: "확정 성공" },
+          "400": { description: "이미 취소되었거나 체크인 완료된 매칭" },
+          "401": { description: "인증 필요" },
+          "404": { description: "존재하지 않는 매칭" },
+        },
+      },
+    },
+    "/api/match/{matchId}/cancel": {
+      post: {
+        tags: ["Match"],
+        summary: "여정 취소",
+        security: [{ BearerAuth: [] }],
+        parameters: [
+          { name: "matchId", in: "path", required: true, schema: { type: "string" } },
+        ],
+        responses: {
+          "200": { description: "취소 성공" },
+          "400": { description: "이미 체크인이 완료되어 취소할 수 없음" },
+          "401": { description: "인증 필요" },
+          "404": { description: "존재하지 않는 매칭" },
         },
       },
     },

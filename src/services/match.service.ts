@@ -12,6 +12,7 @@ interface MatchInput {
 }
 
 interface MatchResult {
+  matchId: string; // 이 매칭 후보를 확정(confirm)할 때 사용
   place: {
     id: string;
     name: string;
@@ -90,16 +91,18 @@ export async function getRandomMatch(input: MatchInput): Promise<MatchResult | n
   const selected = weightedRandomSelect(nearbyPlaces, visitedPlaceIds);
 
   // 5. 매칭 이력 기록
-  await prisma.matchHistory.create({
+  const matchHistory = await prisma.matchHistory.create({
     data: {
       userId,
       placeId: selected.id,
+      distanceKm: Math.round(selected.distanceKm * 10) / 10,
     },
   });
 
   const remainingMatches = MAX_DAILY_MATCHES - todayCount - 1;
 
   return {
+    matchId: matchHistory.id,
     place: {
       id: selected.id,
       name: selected.name,
@@ -193,4 +196,130 @@ export class MatchLimitExceededError extends Error {
     super(message);
     this.name = "MatchLimitExceededError";
   }
+}
+
+interface CurrentTripResult {
+  matchId: string;
+  distanceKm: number;
+  confirmedAt: Date;
+  place: {
+    id: string;
+    name: string;
+    address: string;
+    thumbnail: string | null;
+    mapX: number;
+    mapY: number;
+  };
+  region: {
+    id: string;
+    sidoName: string;
+    sigunguName: string;
+    isDepopulated: boolean;
+  };
+}
+
+function toCurrentTrip(
+  matchHistory: {
+    id: string;
+    distanceKm: number;
+    confirmedAt: Date | null;
+    place: {
+      id: string;
+      name: string;
+      address: string;
+      thumbnail: string | null;
+      mapX: number;
+      mapY: number;
+      region: {
+        id: string;
+        sidoName: string;
+        sigunguName: string;
+        isDepopulated: boolean;
+      };
+    };
+  }
+): CurrentTripResult {
+  return {
+    matchId: matchHistory.id,
+    distanceKm: matchHistory.distanceKm,
+    confirmedAt: matchHistory.confirmedAt as Date,
+    place: {
+      id: matchHistory.place.id,
+      name: matchHistory.place.name,
+      address: matchHistory.place.address,
+      thumbnail: matchHistory.place.thumbnail,
+      mapX: matchHistory.place.mapX,
+      mapY: matchHistory.place.mapY,
+    },
+    region: matchHistory.place.region,
+  };
+}
+
+/**
+ * 매칭 후보를 "여기로 결정"으로 확정 (진행 중인 여정 시작)
+ * - 기존에 확정된 다른 여정이 있다면 자동으로 취소 처리
+ */
+export async function confirmMatch(userId: string, matchId: string): Promise<CurrentTripResult> {
+  const matchHistory = await prisma.matchHistory.findUnique({
+    where: { id: matchId },
+    include: { stamp: true },
+  });
+
+  if (!matchHistory || matchHistory.userId !== userId) {
+    throw new Error("존재하지 않는 매칭입니다.");
+  }
+  if (matchHistory.cancelledAt) {
+    throw new Error("취소된 매칭은 확정할 수 없습니다.");
+  }
+  if (matchHistory.stamp) {
+    throw new Error("이미 체크인이 완료된 매칭입니다.");
+  }
+
+  await prisma.matchHistory.updateMany({
+    where: { userId, confirmedAt: { not: null }, cancelledAt: null, stamp: null, NOT: { id: matchId } },
+    data: { cancelledAt: new Date() },
+  });
+
+  const updated = await prisma.matchHistory.update({
+    where: { id: matchId },
+    data: { confirmedAt: matchHistory.confirmedAt ?? new Date() },
+    include: { place: { include: { region: true } } },
+  });
+
+  return toCurrentTrip(updated);
+}
+
+/**
+ * 진행 중인 여정 취소
+ */
+export async function cancelMatch(userId: string, matchId: string): Promise<void> {
+  const matchHistory = await prisma.matchHistory.findUnique({
+    where: { id: matchId },
+    include: { stamp: true },
+  });
+
+  if (!matchHistory || matchHistory.userId !== userId) {
+    throw new Error("존재하지 않는 매칭입니다.");
+  }
+  if (matchHistory.stamp) {
+    throw new Error("이미 체크인이 완료된 매칭은 취소할 수 없습니다.");
+  }
+
+  await prisma.matchHistory.update({
+    where: { id: matchId },
+    data: { cancelledAt: new Date() },
+  });
+}
+
+/**
+ * 홈 화면 "이동 중" 카드 - 확정됐지만 아직 체크인하지 않은 여정 조회
+ */
+export async function getCurrentTrip(userId: string): Promise<CurrentTripResult | null> {
+  const matchHistory = await prisma.matchHistory.findFirst({
+    where: { userId, confirmedAt: { not: null }, cancelledAt: null, stamp: null },
+    orderBy: { confirmedAt: "desc" },
+    include: { place: { include: { region: true } } },
+  });
+
+  return matchHistory ? toCurrentTrip(matchHistory) : null;
 }

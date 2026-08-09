@@ -737,6 +737,47 @@ export const swaggerDocument: JsonObject = {
         },
       },
     },
+    "/api/reviews": {
+      post: {
+        tags: ["Reviews"],
+        summary: "로컬 후기 작성",
+        security: [{ BearerAuth: [] }],
+        requestBody: {
+          required: true,
+          content: {
+            "application/json": {
+              schema: {
+                type: "object",
+                required: ["placeId", "content"],
+                properties: {
+                  placeId: { type: "string" },
+                  content: { type: "string", maxLength: 500 },
+                },
+              },
+            },
+          },
+        },
+        responses: {
+          "201": { description: "작성 성공" },
+          "400": { description: "내용 누락 / 500자 초과" },
+          "401": { description: "인증 필요" },
+          "404": { description: "존재하지 않는 관광지" },
+        },
+      },
+    },
+    "/api/reviews/places/{placeId}": {
+      get: {
+        tags: ["Reviews"],
+        summary: "특정 관광지의 후기 목록",
+        parameters: [
+          { name: "placeId", in: "path", required: true, schema: { type: "string" } },
+          { name: "limit", in: "query", required: false, schema: { type: "integer", default: 20 } },
+        ],
+        responses: {
+          "200": { description: "조회 성공" },
+        },
+      },
+    },
     "/api/app/info": {
       get: {
         tags: ["App"],

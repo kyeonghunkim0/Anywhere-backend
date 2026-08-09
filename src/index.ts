@@ -14,6 +14,7 @@ import badgeRoutes from "./routes/badge.routes.js";
 import regionRoutes from "./routes/region.routes.js";
 import userRoutes from "./routes/user.routes.js";
 import appRoutes from "./routes/app.routes.js";
+import reviewRoutes from "./routes/review.routes.js";
 import { startSyncPlacesJob } from "./jobs/syncPlaces.job.js";
 
 // 환경변수 검증
@@ -57,6 +58,7 @@ app.use("/api/badges", badgeRoutes);
 app.use("/api/regions", regionRoutes);
 app.use("/api/users", userRoutes);
 app.use("/api/app", appRoutes);
+app.use("/api/reviews", reviewRoutes);
 
 // ============================================
 // 크론잡 등록

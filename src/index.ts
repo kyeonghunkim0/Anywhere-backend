@@ -15,6 +15,7 @@ import regionRoutes from "./routes/region.routes.js";
 import userRoutes from "./routes/user.routes.js";
 import appRoutes from "./routes/app.routes.js";
 import reviewRoutes from "./routes/review.routes.js";
+import { notFoundHandler, errorHandler } from "./middlewares/error.middleware.js";
 import { startSyncPlacesJob } from "./jobs/syncPlaces.job.js";
 
 // 환경변수 검증
@@ -59,6 +60,12 @@ app.use("/api/regions", regionRoutes);
 app.use("/api/users", userRoutes);
 app.use("/api/app", appRoutes);
 app.use("/api/reviews", reviewRoutes);
+
+// ============================================
+// 404 · 전역 에러 핸들러 (반드시 라우트 등록 이후)
+// ============================================
+app.use(notFoundHandler);
+app.use(errorHandler);
 
 // ============================================
 // 크론잡 등록

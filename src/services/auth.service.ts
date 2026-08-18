@@ -4,6 +4,35 @@ import { prisma } from "../utils/prisma.js";
 import { verifyGoogleIdToken } from "../utils/googleAuth.js";
 import { verifyAppleIdToken } from "../utils/appleAuth.js";
 
+/**
+ * 소셜 idToken 검증 실패 에러
+ * 서명·issuer·audience 불일치, 만료, 형식 오류를 모두 포함합니다.
+ * (컨트롤러는 이 에러를 401로 응답합니다)
+ */
+export class IdTokenVerificationError extends Error {
+  constructor(message: string) {
+    super(message);
+    this.name = "IdTokenVerificationError";
+  }
+}
+
+/**
+ * 토큰 자체가 잘못된 경우(401)인지, 공개키 조회 실패 같은 서버/네트워크 문제(500)인지 구분합니다.
+ * jsonwebtoken은 서명·issuer·audience·만료 오류를 모두 JsonWebTokenError 계열로 던지고,
+ * google-auth-library는 평범한 Error를 던지되 네트워크 오류에는 code/response 필드가 붙습니다.
+ */
+function isInvalidTokenError(error: unknown): boolean {
+  if (error instanceof jwt.JsonWebTokenError) return true;
+  if (!(error instanceof Error)) return false;
+
+  // 공개키(JWKS) 조회 자체가 실패한 경우는 토큰 문제가 아니므로 500으로 넘깁니다.
+  if (error.name === "JwksError" || error.name === "SigningKeyNotFoundError") return false;
+  if (error.message.includes("서명 키를 찾을 수 없습니다")) return false;
+
+  // 네트워크 계층 오류(GaxiosError 등)도 500으로 넘깁니다.
+  return !("code" in error || "response" in error);
+}
+
 interface LoginInput {
   socialType: "apple" | "google";
   /** google: GIDGoogleUser.idToken.tokenString / apple: ASAuthorizationAppleIDCredential.identityToken */
@@ -32,10 +61,21 @@ export async function loginWithSocial(input: LoginInput): Promise<AuthResult> {
 
   // 클라이언트가 보낸 socialId는 스푸핑 가능하므로 신뢰하지 않고,
   // 각 프로바이더의 공개키로 idToken을 검증해서 나온 sub만 socialId로 사용합니다.
-  const socialId =
-    socialType === "google"
-      ? (await verifyGoogleIdToken(idToken)).sub
-      : (await verifyAppleIdToken(idToken)).sub;
+  // 검증 단계의 모든 실패는 IdTokenVerificationError로 감싸서 401로 내려보냅니다.
+  let socialId: string;
+  try {
+    socialId =
+      socialType === "google"
+        ? (await verifyGoogleIdToken(idToken)).sub
+        : (await verifyAppleIdToken(idToken)).sub;
+  } catch (error) {
+    const detail = error instanceof Error ? error.message : String(error);
+    console.error(`${socialType} idToken 검증 실패:`, detail);
+    if (isInvalidTokenError(error)) {
+      throw new IdTokenVerificationError("유효하지 않은 idToken입니다.");
+    }
+    throw error;
+  }
 
   // 기존 유저 조회
   let user = await prisma.user.findUnique({

@@ -8,8 +8,20 @@ export const swaggerDocument: JsonObject = {
       "전국 228개 지역을 여행하며 도장을 수집하는 '아무데나' 서비스의 백엔드 API입니다.\n\n" +
       "### 인증 방식\n" +
       "소셜 로그인 후 발급받은 JWT 토큰을 `Authorization: Bearer <token>` 헤더에 포함하여 요청합니다.\n\n" +
+      "### 공통 에러 규약\n" +
+      "성공·실패 모두 `{ success, ... }` 형태의 JSON으로 응답합니다. 실패 응답의 본문은 항상 " +
+      "`{ \"success\": false, \"message\": \"...\" }` 입니다.\n\n" +
+      "| 상태 | 의미 |\n" +
+      "| --- | --- |\n" +
+      "| 400 | 필수 파라미터 누락 · 잘못된 입력 · 본문 JSON 파싱 실패 |\n" +
+      "| 401 | 토큰 없음 · 만료 · 무효 (소셜 idToken 검증 실패 포함) |\n" +
+      "| 404 | 리소스 없음 · 존재하지 않는 경로 |\n" +
+      "| 429 | 요청 횟수 제한 초과 (매칭 일 3회) |\n" +
+      "| 500 | 그 외 서버 오류. `message`는 항상 `\"서버 오류가 발생했습니다.\"` |\n\n" +
+      "등록되지 않은 경로로 요청하면 HTML이 아닌 위 형식의 404 JSON이 반환됩니다. " +
+      "각 엔드포인트에 개별 명시되지 않은 400/500 응답도 동일한 규약을 따릅니다.\n\n" +
       "### 주요 기능\n" +
-      "- 🔐 Apple / 카카오 소셜 로그인\n" +
+      "- 🔐 Apple / Google 소셜 로그인\n" +
       "- 🎯 인구감소지역 가중치 기반 랜덤 관광지 매칭 (일 3회 제한)\n" +
       "- 📍 GPS 기반 반경 500m 체크인 (인구감소지역 보상 2배)\n" +
       "- 📘 228개 지역 여권(도장) 수집 현황\n" +
@@ -50,6 +62,45 @@ export const swaggerDocument: JsonObject = {
         scheme: "bearer",
         bearerFormat: "JWT",
         description: "소셜 로그인 후 발급받은 JWT 토큰",
+      },
+    },
+    // 모든 엔드포인트가 공유하는 실패 응답 (본문 형태는 Error 스키마로 동일)
+    responses: {
+      BadRequest: {
+        description: "필수 파라미터 누락 · 잘못된 입력 · 본문 JSON 파싱 실패",
+        content: {
+          "application/json": {
+            schema: { $ref: "#/components/schemas/Error" },
+            example: { success: false, message: "userId는 필수입니다." },
+          },
+        },
+      },
+      Unauthorized: {
+        description: "토큰 없음 · 만료 · 무효",
+        content: {
+          "application/json": {
+            schema: { $ref: "#/components/schemas/Error" },
+            example: { success: false, message: "유효하지 않은 토큰입니다." },
+          },
+        },
+      },
+      NotFound: {
+        description: "리소스 없음 · 존재하지 않는 경로",
+        content: {
+          "application/json": {
+            schema: { $ref: "#/components/schemas/Error" },
+            example: { success: false, message: "존재하지 않는 지역입니다." },
+          },
+        },
+      },
+      ServerError: {
+        description: "서버 오류",
+        content: {
+          "application/json": {
+            schema: { $ref: "#/components/schemas/Error" },
+            example: { success: false, message: "서버 오류가 발생했습니다." },
+          },
+        },
       },
     },
     schemas: {
@@ -218,7 +269,36 @@ export const swaggerDocument: JsonObject = {
             },
           },
           "201": { description: "신규 유저 회원가입 완료" },
-          "400": { description: "필수 파라미터 누락" },
+          "400": {
+            description:
+              "필수 파라미터 누락 (socialType / idToken) 또는 socialType이 apple·google이 아님",
+            content: {
+              "application/json": {
+                schema: { $ref: "#/components/schemas/Error" },
+                example: { success: false, message: "idToken은 필수입니다." },
+              },
+            },
+          },
+          "401": {
+            description:
+              "idToken 검증 실패. 서명·발급자(issuer)·대상(audience, 앱 Bundle ID/Client ID) 불일치 또는 만료된 토큰입니다.",
+            content: {
+              "application/json": {
+                schema: { $ref: "#/components/schemas/Error" },
+                example: { success: false, message: "idToken 검증에 실패했습니다." },
+              },
+            },
+          },
+          "500": {
+            description:
+              "서버 오류. 프로바이더 공개키(JWKS) 조회 실패 등 토큰 자체와 무관한 실패도 여기에 포함됩니다.",
+            content: {
+              "application/json": {
+                schema: { $ref: "#/components/schemas/Error" },
+                example: { success: false, message: "서버 오류가 발생했습니다." },
+              },
+            },
+          },
         },
       },
     },

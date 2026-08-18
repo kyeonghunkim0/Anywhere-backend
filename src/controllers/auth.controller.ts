@@ -1,5 +1,5 @@
 import { Request, Response } from "express";
-import { loginWithSocial } from "../services/auth.service.js";
+import { loginWithSocial, IdTokenVerificationError } from "../services/auth.service.js";
 
 /**
  * POST /api/auth/login
@@ -51,7 +51,7 @@ export async function loginController(req: Request, res: Response): Promise<void
     });
   } catch (error) {
     console.error("로그인 에러:", error);
-    if (error instanceof Error && error.message.includes("idToken")) {
+    if (error instanceof IdTokenVerificationError) {
       res.status(401).json({
         success: false,
         message: "idToken 검증에 실패했습니다.",

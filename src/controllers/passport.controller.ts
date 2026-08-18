@@ -1,6 +1,7 @@
 import { Response } from "express";
 import { AuthRequest } from "../middlewares/auth.middleware.js";
 import { getPassport } from "../services/passport.service.js";
+import { respondWithError } from "../middlewares/error.middleware.js";
 
 /**
  * GET /api/passport/:userId
@@ -24,10 +25,6 @@ export async function getPassportController(req: AuthRequest, res: Response): Pr
       data: result,
     });
   } catch (error) {
-    console.error("여권 조회 에러:", error);
-    res.status(500).json({
-      success: false,
-      message: "서버 오류가 발생했습니다.",
-    });
+    respondWithError(res, error, "여권 조회");
   }
 }

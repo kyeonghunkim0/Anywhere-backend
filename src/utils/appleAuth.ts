@@ -1,6 +1,7 @@
 import jwt from "jsonwebtoken";
 import jwksClient from "jwks-rsa";
 import { env } from "../config/env.js";
+import { UnauthorizedError } from "./errors.js";
 
 const APPLE_ISSUER = "https://appleid.apple.com";
 const APPLE_JWKS_URI = "https://appleid.apple.com/auth/keys";
@@ -37,7 +38,7 @@ export async function verifyAppleIdToken(idToken: string): Promise<AppleIdTokenP
   const decodedHeader = jwt.decode(idToken, { complete: true });
   const kid = decodedHeader?.header?.kid;
   if (!kid || typeof decodedHeader === "string") {
-    throw new Error("유효하지 않은 Apple idToken입니다.");
+    throw new UnauthorizedError("유효하지 않은 Apple idToken입니다.");
   }
 
   const publicKey = await getSigningKey(kid);
@@ -49,7 +50,7 @@ export async function verifyAppleIdToken(idToken: string): Promise<AppleIdTokenP
   });
 
   if (typeof payload === "string" || !payload.sub) {
-    throw new Error("유효하지 않은 Apple idToken입니다.");
+    throw new UnauthorizedError("유효하지 않은 Apple idToken입니다.");
   }
 
   return {

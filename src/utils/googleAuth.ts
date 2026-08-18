@@ -1,5 +1,6 @@
-import { OAuth2Client } from "google-auth-library";
+import { OAuth2Client, type LoginTicket } from "google-auth-library";
 import { env } from "../config/env.js";
+import { UnauthorizedError } from "./errors.js";
 
 const client = new OAuth2Client(env.GOOGLE_CLIENT_ID);
 
@@ -15,14 +16,25 @@ export interface GoogleIdTokenPayload {
  * 클라이언트가 body로 보낸 socialId는 스푸핑 가능하므로 사용하지 않습니다.
  */
 export async function verifyGoogleIdToken(idToken: string): Promise<GoogleIdTokenPayload> {
-  const ticket = await client.verifyIdToken({
-    idToken,
-    audience: env.GOOGLE_CLIENT_ID,
-  });
+  let ticket: LoginTicket;
+  try {
+    ticket = await client.verifyIdToken({
+      idToken,
+      audience: env.GOOGLE_CLIENT_ID,
+    });
+  } catch (error) {
+    // google-auth-library는 서명·aud·만료 오류를 평범한 Error로 던지지만,
+    // 인증서 조회 실패 같은 네트워크 오류에는 code/response 필드가 붙습니다.
+    // 후자는 서버 문제이므로 그대로 올려보내 500이 되게 합니다.
+    if (error instanceof Error && !("code" in error || "response" in error)) {
+      throw new UnauthorizedError("유효하지 않은 Google idToken입니다.");
+    }
+    throw error;
+  }
 
   const payload = ticket.getPayload();
   if (!payload?.sub) {
-    throw new Error("유효하지 않은 Google idToken입니다.");
+    throw new UnauthorizedError("유효하지 않은 Google idToken입니다.");
   }
 
   return {

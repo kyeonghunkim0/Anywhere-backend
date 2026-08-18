@@ -1,6 +1,7 @@
 import { Request, Response } from "express";
 import { AuthRequest } from "../middlewares/auth.middleware.js";
 import { createReview, getReviewsByPlace } from "../services/review.service.js";
+import { respondWithError } from "../middlewares/error.middleware.js";
 
 /**
  * POST /api/reviews
@@ -31,16 +32,7 @@ export async function createReviewController(req: AuthRequest, res: Response): P
     const result = await createReview({ userId, placeId, content });
     res.status(201).json({ success: true, data: result });
   } catch (error) {
-    if (error instanceof Error && error.message === "존재하지 않는 관광지입니다.") {
-      res.status(404).json({ success: false, message: error.message });
-      return;
-    }
-    if (error instanceof Error) {
-      res.status(400).json({ success: false, message: error.message });
-      return;
-    }
-    console.error("후기 작성 에러:", error);
-    res.status(500).json({ success: false, message: "서버 오류가 발생했습니다." });
+    respondWithError(res, error, "후기 작성");
   }
 }
 
@@ -55,7 +47,6 @@ export async function getReviewsByPlaceController(req: Request, res: Response): 
     const result = await getReviewsByPlace(placeId, limit);
     res.json({ success: true, data: result });
   } catch (error) {
-    console.error("후기 조회 에러:", error);
-    res.status(500).json({ success: false, message: "서버 오류가 발생했습니다." });
+    respondWithError(res, error, "후기 조회");
   }
 }

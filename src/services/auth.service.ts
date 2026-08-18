@@ -4,13 +4,14 @@ import { prisma } from "../utils/prisma.js";
 import { verifyGoogleIdToken } from "../utils/googleAuth.js";
 import { verifyAppleIdToken } from "../utils/appleAuth.js";
 import { isPrismaErrorCode } from "../utils/prismaError.js";
+import { UnauthorizedError } from "../utils/errors.js";
 
 /**
  * 소셜 idToken 검증 실패 에러
  * 서명·issuer·audience 불일치, 만료, 형식 오류를 모두 포함합니다.
  * (컨트롤러는 이 에러를 401로 응답합니다)
  */
-export class IdTokenVerificationError extends Error {
+export class IdTokenVerificationError extends UnauthorizedError {
   constructor(message: string) {
     super(message);
     this.name = "IdTokenVerificationError";
@@ -19,22 +20,15 @@ export class IdTokenVerificationError extends Error {
 
 /**
  * 토큰 자체가 잘못된 경우(401)인지, 공개키 조회 실패 같은 서버/네트워크 문제(500)인지 구분합니다.
- * jsonwebtoken은 서명·issuer·audience·만료 오류를 모두 JsonWebTokenError 계열로 던지고,
- * google-auth-library는 평범한 Error를 던지되 네트워크 오류에는 code/response 필드가 붙습니다.
+ * 아래 셋만 401로 보고, 나머지는 전부 서버 문제로 간주해 그대로 올려보냅니다.
+ * - jsonwebtoken이 던지는 서명·issuer·audience·만료 오류
+ * - 각 프로바이더 유틸이 명시적으로 던진 UnauthorizedError
+ * - 프로바이더가 발급한 적 없는 kid (위조되었거나 폐기된 토큰)
  */
 function isInvalidTokenError(error: unknown): boolean {
   if (error instanceof jwt.JsonWebTokenError) return true;
-  if (!(error instanceof Error)) return false;
-
-  // 프로바이더가 발급한 적 없는 kid = 위조되었거나 폐기된 토큰이므로 401입니다.
-  if (error.name === "SigningKeyNotFoundError") return true;
-
-  // 반면 JWKS 엔드포인트 자체를 못 읽은 경우는 서버 문제이므로 500으로 넘깁니다.
-  if (error.name === "JwksError" || error.name === "JwksRateLimitError") return false;
-  if (error.message.includes("서명 키를 찾을 수 없습니다")) return false;
-
-  // 네트워크 계층 오류(GaxiosError 등)도 500으로 넘깁니다.
-  return !("code" in error || "response" in error);
+  if (error instanceof UnauthorizedError) return true;
+  return error instanceof Error && error.name === "SigningKeyNotFoundError";
 }
 
 interface LoginInput {
@@ -76,7 +70,7 @@ export async function loginWithSocial(input: LoginInput): Promise<AuthResult> {
     const detail = error instanceof Error ? error.message : String(error);
     console.error(`${socialType} idToken 검증 실패:`, detail);
     if (isInvalidTokenError(error)) {
-      throw new IdTokenVerificationError("유효하지 않은 idToken입니다.");
+      throw new IdTokenVerificationError("idToken 검증에 실패했습니다.");
     }
     throw error;
   }

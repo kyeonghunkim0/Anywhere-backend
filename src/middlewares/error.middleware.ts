@@ -1,5 +1,6 @@
 import { Request, Response, NextFunction } from "express";
 import { isPrismaErrorCode } from "../utils/prismaError.js";
+import { AppError } from "../utils/errors.js";
 
 // ============================================
 // 404 핸들러
@@ -14,6 +15,40 @@ export function notFoundHandler(req: Request, res: Response): void {
     success: false,
     message: `요청하신 경로를 찾을 수 없습니다. (${req.method} ${req.path})`,
   });
+}
+
+// ============================================
+// 컨트롤러 공통 에러 응답
+// ============================================
+
+/**
+ * 컨트롤러 catch 블록의 공통 처리기입니다.
+ * - AppError: 에러가 들고 있는 상태 코드로 그대로 응답 (예상된 실패이므로 로그를 남기지 않음)
+ * - Prisma 제약 위반: 409 / 404
+ * - 그 외: 예상 못 한 실패이므로 로그를 남기고 500
+ *
+ * @param context 로그에 남길 작업 이름 (예: "매칭 확정")
+ */
+export function respondWithError(res: Response, error: unknown, context: string): void {
+  if (error instanceof AppError) {
+    res.status(error.status).json({ success: false, message: error.message });
+    return;
+  }
+
+  if (isPrismaErrorCode(error, "P2002")) {
+    console.error(`${context} 에러(중복 데이터):`, error);
+    res.status(409).json({ success: false, message: "이미 존재하는 데이터입니다." });
+    return;
+  }
+
+  if (isPrismaErrorCode(error, "P2025")) {
+    console.error(`${context} 에러(대상 없음):`, error);
+    res.status(404).json({ success: false, message: "요청하신 데이터를 찾을 수 없습니다." });
+    return;
+  }
+
+  console.error(`${context} 에러:`, error);
+  res.status(500).json({ success: false, message: "서버 오류가 발생했습니다." });
 }
 
 // ============================================

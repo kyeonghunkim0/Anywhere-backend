@@ -1,5 +1,6 @@
 import { prisma } from "../utils/prisma.js";
 import { REGION_LEVELS, getNextRegionLevelTarget } from "../utils/gamification.js";
+import { NotFoundError } from "../utils/errors.js";
 
 interface GrowthRegionItem {
   regionId: string;
@@ -79,7 +80,7 @@ interface RegionDetailResult {
 export async function getRegionDetail(regionId: string): Promise<RegionDetailResult> {
   const region = await prisma.region.findUnique({ where: { id: regionId } });
   if (!region) {
-    throw new Error("존재하지 않는 지역입니다.");
+    throw new NotFoundError("존재하지 않는 지역입니다.");
   }
 
   const [visitorCount, uniqueVisitorCount] = await Promise.all([

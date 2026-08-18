@@ -1,6 +1,7 @@
 import { Request, Response } from "express";
 import { AuthRequest } from "../middlewares/auth.middleware.js";
 import { getUserRanking, getPlaceRanking, getMyRanking } from "../services/ranking.service.js";
+import { respondWithError } from "../middlewares/error.middleware.js";
 
 /**
  * GET /api/ranking/users
@@ -11,8 +12,7 @@ export async function getUserRankingController(_req: Request, res: Response): Pr
     const ranking = await getUserRanking();
     res.json({ success: true, data: ranking });
   } catch (error) {
-    console.error("유저 랭킹 에러:", error);
-    res.status(500).json({ success: false, message: "서버 오류가 발생했습니다." });
+    respondWithError(res, error, "유저 랭킹");
   }
 }
 
@@ -25,8 +25,7 @@ export async function getPlaceRankingController(_req: Request, res: Response): P
     const ranking = await getPlaceRanking();
     res.json({ success: true, data: ranking });
   } catch (error) {
-    console.error("명소 랭킹 에러:", error);
-    res.status(500).json({ success: false, message: "서버 오류가 발생했습니다." });
+    respondWithError(res, error, "명소 랭킹");
   }
 }
 
@@ -45,7 +44,6 @@ export async function getMyRankingController(req: AuthRequest, res: Response): P
     const result = await getMyRanking(userId);
     res.json({ success: true, data: result });
   } catch (error) {
-    console.error("내 랭킹 조회 에러:", error);
-    res.status(500).json({ success: false, message: "서버 오류가 발생했습니다." });
+    respondWithError(res, error, "내 랭킹 조회");
   }
 }

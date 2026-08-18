@@ -1,6 +1,7 @@
 import { Response } from "express";
 import { AuthRequest } from "../middlewares/auth.middleware.js";
 import { checkIn } from "../services/mission.service.js";
+import { respondWithError } from "../middlewares/error.middleware.js";
 
 /**
  * POST /api/mission/check-in
@@ -39,10 +40,6 @@ export async function checkInController(req: AuthRequest, res: Response): Promis
 
     res.status(result.success ? 200 : 400).json(result);
   } catch (error) {
-    console.error("체크인 에러:", error);
-    res.status(500).json({
-      success: false,
-      message: "서버 오류가 발생했습니다.",
-    });
+    respondWithError(res, error, "체크인");
   }
 }

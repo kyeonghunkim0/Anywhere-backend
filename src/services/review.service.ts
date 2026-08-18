@@ -1,4 +1,5 @@
 import { prisma } from "../utils/prisma.js";
+import { NotFoundError, ValidationError } from "../utils/errors.js";
 
 const MAX_CONTENT_LENGTH = 500;
 
@@ -24,15 +25,15 @@ export async function createReview(input: CreateReviewInput): Promise<ReviewResu
 
   const trimmed = content.trim();
   if (!trimmed) {
-    throw new Error("후기 내용을 입력해주세요.");
+    throw new ValidationError("후기 내용을 입력해주세요.");
   }
   if (trimmed.length > MAX_CONTENT_LENGTH) {
-    throw new Error(`후기는 ${MAX_CONTENT_LENGTH}자 이내로 작성해주세요.`);
+    throw new ValidationError(`후기는 ${MAX_CONTENT_LENGTH}자 이내로 작성해주세요.`);
   }
 
   const place = await prisma.place.findUnique({ where: { id: placeId } });
   if (!place) {
-    throw new Error("존재하지 않는 관광지입니다.");
+    throw new NotFoundError("존재하지 않는 관광지입니다.");
   }
 
   const review = await prisma.review.create({

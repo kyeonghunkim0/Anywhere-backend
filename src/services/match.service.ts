@@ -1,5 +1,6 @@
 import { prisma } from "../utils/prisma.js";
 import { haversineDistance } from "../utils/haversine.js";
+import { NotFoundError, RateLimitError, ValidationError } from "../utils/errors.js";
 
 const MAX_DAILY_MATCHES = 3;
 
@@ -191,7 +192,7 @@ function weightedRandomSelect<T extends { id: string; region: { isDepopulated: b
 /**
  * 일일 매칭 횟수 초과 에러
  */
-export class MatchLimitExceededError extends Error {
+export class MatchLimitExceededError extends RateLimitError {
   constructor(message: string) {
     super(message);
     this.name = "MatchLimitExceededError";
@@ -266,13 +267,13 @@ export async function confirmMatch(userId: string, matchId: string): Promise<Cur
   });
 
   if (!matchHistory || matchHistory.userId !== userId) {
-    throw new Error("존재하지 않는 매칭입니다.");
+    throw new NotFoundError("존재하지 않는 매칭입니다.");
   }
   if (matchHistory.cancelledAt) {
-    throw new Error("취소된 매칭은 확정할 수 없습니다.");
+    throw new ValidationError("취소된 매칭은 확정할 수 없습니다.");
   }
   if (matchHistory.stamp) {
-    throw new Error("이미 체크인이 완료된 매칭입니다.");
+    throw new ValidationError("이미 체크인이 완료된 매칭입니다.");
   }
 
   await prisma.matchHistory.updateMany({
@@ -299,10 +300,10 @@ export async function cancelMatch(userId: string, matchId: string): Promise<void
   });
 
   if (!matchHistory || matchHistory.userId !== userId) {
-    throw new Error("존재하지 않는 매칭입니다.");
+    throw new NotFoundError("존재하지 않는 매칭입니다.");
   }
   if (matchHistory.stamp) {
-    throw new Error("이미 체크인이 완료된 매칭은 취소할 수 없습니다.");
+    throw new ValidationError("이미 체크인이 완료된 매칭은 취소할 수 없습니다.");
   }
 
   await prisma.matchHistory.update({

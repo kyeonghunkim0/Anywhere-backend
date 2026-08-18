@@ -1,4 +1,5 @@
 import { prisma } from "../utils/prisma.js";
+import { NotFoundError } from "../utils/errors.js";
 
 interface UserRankItem {
   rank: number;
@@ -102,7 +103,7 @@ export async function getMyRanking(userId: string): Promise<MyRankResult> {
   });
 
   if (!user) {
-    throw new Error("존재하지 않는 사용자입니다.");
+    throw new NotFoundError("존재하지 않는 사용자입니다.");
   }
 
   // 나보다 도장이 많은 유저 수 = 내 순위 - 1

@@ -1,5 +1,6 @@
 import { Response } from "express";
 import { AuthRequest } from "../middlewares/auth.middleware.js";
+import { respondWithError } from "../middlewares/error.middleware.js";
 import {
   getMyProfile,
   getMyProfileStats,
@@ -22,8 +23,7 @@ export async function getMyProfileController(req: AuthRequest, res: Response): P
     const profile = await getMyProfile(userId);
     res.json({ success: true, data: profile });
   } catch (error) {
-    console.error("프로필 조회 에러:", error);
-    res.status(500).json({ success: false, message: "서버 오류가 발생했습니다." });
+    respondWithError(res, error, "프로필 조회");
   }
 }
 
@@ -42,8 +42,7 @@ export async function getMyProfileStatsController(req: AuthRequest, res: Respons
     const stats = await getMyProfileStats(userId);
     res.json({ success: true, data: stats });
   } catch (error) {
-    console.error("프로필 통계 조회 에러:", error);
-    res.status(500).json({ success: false, message: "서버 오류가 발생했습니다." });
+    respondWithError(res, error, "프로필 통계 조회");
   }
 }
 
@@ -63,12 +62,7 @@ export async function updateMyProfileController(req: AuthRequest, res: Response)
     const profile = await updateMyProfile(userId, { nickname, profileImage });
     res.json({ success: true, message: "저장되었습니다.", data: profile });
   } catch (error) {
-    if (error instanceof Error && error.message.includes("닉네임")) {
-      res.status(400).json({ success: false, message: error.message });
-      return;
-    }
-    console.error("프로필 수정 에러:", error);
-    res.status(500).json({ success: false, message: "서버 오류가 발생했습니다." });
+    respondWithError(res, error, "프로필 수정");
   }
 }
 
@@ -93,8 +87,7 @@ export async function updateMySettingsController(req: AuthRequest, res: Response
     const profile = await updateMySettings(userId, pushEnabled);
     res.json({ success: true, message: "설정이 저장되었습니다.", data: profile });
   } catch (error) {
-    console.error("설정 수정 에러:", error);
-    res.status(500).json({ success: false, message: "서버 오류가 발생했습니다." });
+    respondWithError(res, error, "설정 수정");
   }
 }
 
@@ -107,11 +100,6 @@ export async function getRankerDetailController(req: AuthRequest, res: Response)
     const detail = await getRankerDetail(userId);
     res.json({ success: true, data: detail });
   } catch (error) {
-    if (error instanceof Error && error.message.includes("존재하지 않는")) {
-      res.status(404).json({ success: false, message: error.message });
-      return;
-    }
-    console.error("유저 상세 조회 에러:", error);
-    res.status(500).json({ success: false, message: "서버 오류가 발생했습니다." });
+    respondWithError(res, error, "유저 상세 조회");
   }
 }

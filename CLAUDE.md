@@ -41,15 +41,16 @@ src/
   controllers/      HTTP 경계. 입력 검증 · 응답 포맷 · try/catch.
   services/         비즈니스 로직 + Prisma 쿼리. Express 타입 금지.
   middlewares/      auth.middleware.ts (JWT 검증, AuthRequest 타입)
+                    error.middleware.ts (404·전역 에러 핸들러, respondWithError)
   jobs/             node-cron 스케줄러
-  utils/            prisma(싱글턴), googleAuth, appleAuth, haversine, gamification
+  utils/            prisma(싱글턴), errors(도메인 에러), prismaError, googleAuth, appleAuth, haversine, gamification
   generated/prisma/ Prisma 생성 코드 — 절대 직접 수정하지 마세요.
 ```
 
 **레이어 규칙**
 
 - 컨트롤러는 얇게: 파라미터 추출 → 필수값 검증 → 서비스 호출 → 응답. 로직은 서비스로.
-- 서비스는 `Request`/`Response`를 import하지 않습니다. 실패는 `throw new Error("한국어 메시지")`로 알리고, HTTP 상태 코드 결정은 컨트롤러가 합니다.
+- 서비스는 `Request`/`Response`를 import하지 않습니다. 실패는 `src/utils/errors.ts`의 도메인 에러(`ValidationError` 400 / `UnauthorizedError` 401 / `NotFoundError` 404 / `ConflictError` 409 / `RateLimitError` 429)를 한국어 메시지와 함께 `throw`합니다. 상태 코드는 에러 자신이 들고 있으므로 컨트롤러가 메시지 문자열을 비교하지 않습니다.
 - DB 접근은 서비스 계층에서만. 컨트롤러에서 `prisma`를 직접 부르지 마세요.
 - Prisma는 항상 `src/utils/prisma.ts`의 싱글턴 `prisma`를 import합니다. `new PrismaClient()`를 새로 만들지 마세요.
 - 새 도메인을 추가할 때는 `routes` / `controllers` / `services` 3개 파일을 같은 이름으로 만들고, `index.ts`에 `app.use("/api/...", xxxRoutes)`를 등록한 뒤 `config/swagger.ts`에도 스펙을 추가합니다.
@@ -60,7 +61,7 @@ src/
 - **named export만 사용합니다.** 예외는 `routes/*.ts`의 `export default router` 하나뿐입니다.
 - 컨트롤러 함수 이름은 `xxxController`, 서비스 함수는 동사형(`getPassport`, `syncAllPlaces`).
 - TypeScript strict 모드. `any` 금지 — 필요하면 `interface`로 반환 타입을 명시하세요. 서비스의 반환 타입은 항상 선언합니다.
-- 모든 컨트롤러의 async 본문은 `try/catch`로 감싸고, `catch`에서 `console.error("...에러:", error)` 후 500을 응답합니다.
+- 모든 컨트롤러의 async 본문은 `try/catch`로 감싸고, `catch`는 `respondWithError(res, error, "작업이름")` 한 줄로 끝냅니다 (`middlewares/error.middleware.ts`). 이 함수가 도메인 에러 → 해당 상태 코드, Prisma P2002 → 409, P2025 → 404, 나머지 → 로그 후 500으로 매핑합니다.
 - 주석·에러 메시지·로그는 **한국어**로 작성합니다. 기존 파일의 `// ===` 구분선 스타일을 따르세요.
 
 ## 5. API 응답 규약
@@ -75,10 +76,14 @@ res.json({ success: true, data: result });
 res.status(400).json({ success: false, message: "userId는 필수입니다." });
 ```
 
-- 400: 필수 파라미터 누락 / 잘못된 입력
-- 401: 토큰 없음·만료·무효 (`authMiddleware`가 처리)
-- 404: 리소스 없음
+- 400: 필수 파라미터 누락 / 잘못된 입력 / 본문 JSON 파싱 실패
+- 401: 토큰 없음·만료·무효 (`authMiddleware`가 처리), 소셜 idToken 검증 실패
+- 404: 리소스 없음, 등록되지 않은 경로 (`notFoundHandler`)
+- 409: 중복 데이터 (Prisma unique 제약 위반)
+- 429: 요청 횟수 제한 초과
 - 500: 그 외 서버 오류 — `message`는 `"서버 오류가 발생했습니다."`로 통일
+
+컨트롤러 밖에서 난 에러(본문 파싱 실패 등)와 미등록 경로는 `index.ts` 라우트 등록 뒤에 붙인 `notFoundHandler` / `errorHandler`가 같은 JSON 형식으로 응답합니다.
 
 인증이 필요한 라우트는 `router.use(authMiddleware)` 또는 핸들러 앞에 미들웨어를 붙이고, 컨트롤러 시그니처는 `(req: AuthRequest, res: Response)`를 사용합니다. 로그인(`/api/auth/login`), 헬스체크, `/api/app`, 공개 조회 API는 미인증입니다.
 

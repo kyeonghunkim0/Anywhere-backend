@@ -1,4 +1,5 @@
 import { prisma } from "../utils/prisma.js";
+import { NotFoundError } from "../utils/errors.js";
 
 interface PassportRegion {
   regionId: string;
@@ -32,7 +33,7 @@ export async function getPassport(userId: string): Promise<PassportResult> {
   });
 
   if (!user) {
-    throw new Error("존재하지 않는 사용자입니다.");
+    throw new NotFoundError("존재하지 않는 사용자입니다.");
   }
 
   // 전체 지역 목록

@@ -1,8 +1,8 @@
 import { Response } from "express";
 import { AuthRequest } from "../middlewares/auth.middleware.js";
+import { respondWithError } from "../middlewares/error.middleware.js";
 import {
   getRandomMatch,
-  MatchLimitExceededError,
   confirmMatch,
   cancelMatch,
   getCurrentTrip,
@@ -47,19 +47,7 @@ export async function getRandomMatchController(req: AuthRequest, res: Response):
       data: result,
     });
   } catch (error) {
-    if (error instanceof MatchLimitExceededError) {
-      res.status(429).json({
-        success: false,
-        message: error.message,
-      });
-      return;
-    }
-
-    console.error("랜덤 매칭 에러:", error);
-    res.status(500).json({
-      success: false,
-      message: "서버 오류가 발생했습니다.",
-    });
+    respondWithError(res, error, "랜덤 매칭");
   }
 }
 
@@ -80,16 +68,7 @@ export async function confirmMatchController(req: AuthRequest, res: Response): P
 
     res.json({ success: true, data: trip });
   } catch (error) {
-    if (error instanceof Error && error.message === "존재하지 않는 매칭입니다.") {
-      res.status(404).json({ success: false, message: error.message });
-      return;
-    }
-    if (error instanceof Error) {
-      res.status(400).json({ success: false, message: error.message });
-      return;
-    }
-    console.error("매칭 확정 에러:", error);
-    res.status(500).json({ success: false, message: "서버 오류가 발생했습니다." });
+    respondWithError(res, error, "매칭 확정");
   }
 }
 
@@ -110,16 +89,7 @@ export async function cancelMatchController(req: AuthRequest, res: Response): Pr
 
     res.json({ success: true, message: "여정을 취소했습니다." });
   } catch (error) {
-    if (error instanceof Error && error.message === "존재하지 않는 매칭입니다.") {
-      res.status(404).json({ success: false, message: error.message });
-      return;
-    }
-    if (error instanceof Error) {
-      res.status(400).json({ success: false, message: error.message });
-      return;
-    }
-    console.error("매칭 취소 에러:", error);
-    res.status(500).json({ success: false, message: "서버 오류가 발생했습니다." });
+    respondWithError(res, error, "매칭 취소");
   }
 }
 
@@ -138,7 +108,6 @@ export async function getCurrentTripController(req: AuthRequest, res: Response):
     const trip = await getCurrentTrip(userId);
     res.json({ success: true, data: trip });
   } catch (error) {
-    console.error("진행 중 여정 조회 에러:", error);
-    res.status(500).json({ success: false, message: "서버 오류가 발생했습니다." });
+    respondWithError(res, error, "진행 중 여정 조회");
   }
 }

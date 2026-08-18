@@ -1,5 +1,6 @@
 import { Request, Response } from "express";
 import { getRecentFeed } from "../services/feed.service.js";
+import { respondWithError } from "../middlewares/error.middleware.js";
 
 /**
  * GET /api/feed/recent?limit=20
@@ -24,10 +25,6 @@ export async function getRecentFeedController(req: Request, res: Response): Prom
       data: result,
     });
   } catch (error) {
-    console.error("피드 조회 에러:", error);
-    res.status(500).json({
-      success: false,
-      message: "서버 오류가 발생했습니다.",
-    });
+    respondWithError(res, error, "피드 조회");
   }
 }

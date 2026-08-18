@@ -1,4 +1,5 @@
 import { Request, Response, NextFunction } from "express";
+import { isPrismaErrorCode } from "../utils/prismaError.js";
 
 // ============================================
 // 404 핸들러
@@ -30,7 +31,7 @@ function isJsonParseError(error: unknown): boolean {
 
 /**
  * 컨트롤러 try/catch 밖에서 발생한 에러의 최종 안전망입니다.
- * 본문 파싱 실패만 400으로 구분하고, 나머지는 500으로 통일합니다.
+ * 본문 파싱 실패(400)와 Prisma 제약 위반(409/404)만 구분하고, 나머지는 500으로 통일합니다.
  * Express가 에러 핸들러로 인식하려면 인자가 반드시 4개여야 합니다.
  */
 export function errorHandler(
@@ -49,6 +50,24 @@ export function errorHandler(
     res.status(400).json({
       success: false,
       message: "요청 본문이 올바른 JSON 형식이 아닙니다.",
+    });
+    return;
+  }
+
+  if (isPrismaErrorCode(error, "P2002")) {
+    console.error("중복 데이터 생성 시도:", error);
+    res.status(409).json({
+      success: false,
+      message: "이미 존재하는 데이터입니다.",
+    });
+    return;
+  }
+
+  if (isPrismaErrorCode(error, "P2025")) {
+    console.error("대상 레코드 없음:", error);
+    res.status(404).json({
+      success: false,
+      message: "요청하신 데이터를 찾을 수 없습니다.",
     });
     return;
   }

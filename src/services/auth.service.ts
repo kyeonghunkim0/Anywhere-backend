@@ -3,6 +3,7 @@ import { env } from "../config/env.js";
 import { prisma } from "../utils/prisma.js";
 import { verifyGoogleIdToken } from "../utils/googleAuth.js";
 import { verifyAppleIdToken } from "../utils/appleAuth.js";
+import { isPrismaErrorCode } from "../utils/prismaError.js";
 
 /**
  * 소셜 idToken 검증 실패 에러
@@ -25,8 +26,11 @@ function isInvalidTokenError(error: unknown): boolean {
   if (error instanceof jwt.JsonWebTokenError) return true;
   if (!(error instanceof Error)) return false;
 
-  // 공개키(JWKS) 조회 자체가 실패한 경우는 토큰 문제가 아니므로 500으로 넘깁니다.
-  if (error.name === "JwksError" || error.name === "SigningKeyNotFoundError") return false;
+  // 프로바이더가 발급한 적 없는 kid = 위조되었거나 폐기된 토큰이므로 401입니다.
+  if (error.name === "SigningKeyNotFoundError") return true;
+
+  // 반면 JWKS 엔드포인트 자체를 못 읽은 경우는 서버 문제이므로 500으로 넘깁니다.
+  if (error.name === "JwksError" || error.name === "JwksRateLimitError") return false;
   if (error.message.includes("서명 키를 찾을 수 없습니다")) return false;
 
   // 네트워크 계층 오류(GaxiosError 등)도 500으로 넘깁니다.
@@ -86,16 +90,24 @@ export async function loginWithSocial(input: LoginInput): Promise<AuthResult> {
 
   if (!user) {
     // 신규 유저 생성
-    isNewUser = true;
-    user = await prisma.user.create({
-      data: {
-        socialType,
-        socialId,
-        nickname: nickname || `여행자_${Date.now().toString(36)}`,
-        totalStamps: 0,
-      },
-    });
-    console.log(`🆕 새 유저 가입: ${user.nickname} (${socialType})`);
+    // 같은 socialId로 요청이 동시에 들어오면 한쪽은 unique 제약(P2002)에 걸리므로,
+    // 그때는 먼저 생성된 유저를 다시 읽어 정상 로그인으로 처리합니다.
+    try {
+      user = await prisma.user.create({
+        data: {
+          socialType,
+          socialId,
+          nickname: nickname || `여행자_${Date.now().toString(36)}`,
+          totalStamps: 0,
+        },
+      });
+      isNewUser = true;
+      console.log(`🆕 새 유저 가입: ${user.nickname} (${socialType})`);
+    } catch (error) {
+      if (!isPrismaErrorCode(error, "P2002")) throw error;
+      user = await prisma.user.findUnique({ where: { socialId } });
+      if (!user) throw error;
+    }
   }
 
   // JWT 토큰 생성

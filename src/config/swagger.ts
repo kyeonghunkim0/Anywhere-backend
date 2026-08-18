@@ -16,6 +16,7 @@ export const swaggerDocument: JsonObject = {
       "| 400 | 필수 파라미터 누락 · 잘못된 입력 · 본문 JSON 파싱 실패 |\n" +
       "| 401 | 토큰 없음 · 만료 · 무효 (소셜 idToken 검증 실패 포함) |\n" +
       "| 404 | 리소스 없음 · 존재하지 않는 경로 |\n" +
+      "| 409 | 중복 데이터 (unique 제약 위반) |\n" +
       "| 429 | 요청 횟수 제한 초과 (매칭 일 3회) |\n" +
       "| 500 | 그 외 서버 오류. `message`는 항상 `\"서버 오류가 발생했습니다.\"` |\n\n" +
       "등록되지 않은 경로로 요청하면 HTML이 아닌 위 형식의 404 JSON이 반환됩니다. " +
@@ -90,6 +91,15 @@ export const swaggerDocument: JsonObject = {
           "application/json": {
             schema: { $ref: "#/components/schemas/Error" },
             example: { success: false, message: "존재하지 않는 지역입니다." },
+          },
+        },
+      },
+      Conflict: {
+        description: "중복 데이터 (unique 제약 위반)",
+        content: {
+          "application/json": {
+            schema: { $ref: "#/components/schemas/Error" },
+            example: { success: false, message: "이미 존재하는 데이터입니다." },
           },
         },
       },
@@ -934,3 +944,38 @@ export const swaggerDocument: JsonObject = {
     },
   },
 };
+
+// ============================================
+// 공통 에러 응답 자동 주입
+// ============================================
+
+interface OperationObject {
+  security?: unknown[];
+  responses?: Record<string, unknown>;
+}
+
+/**
+ * 모든 엔드포인트에 공통 실패 응답을 채워 넣습니다.
+ * - 500: 예외 없이 모든 오퍼레이션에 존재 (컨트롤러 catch 말단이 항상 500을 응답하므로)
+ * - 401: security가 걸린(인증 필요) 오퍼레이션에만
+ * 이미 개별 명시된 상태 코드는 덮어쓰지 않습니다.
+ */
+function applyCommonErrorResponses(paths: Record<string, Record<string, OperationObject>>): void {
+  for (const pathItem of Object.values(paths)) {
+    for (const operation of Object.values(pathItem)) {
+      const responses = operation?.responses;
+      if (!responses) continue;
+
+      if (operation.security && !responses["401"]) {
+        responses["401"] = { $ref: "#/components/responses/Unauthorized" };
+      }
+      if (!responses["500"]) {
+        responses["500"] = { $ref: "#/components/responses/ServerError" };
+      }
+    }
+  }
+}
+
+applyCommonErrorResponses(
+  swaggerDocument.paths as Record<string, Record<string, OperationObject>>
+);

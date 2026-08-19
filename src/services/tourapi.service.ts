@@ -54,8 +54,10 @@ async function fetchPlacesByRegion(
           MobileApp: "Anywhere",
           _type: "json",
           contentTypeId: 12, // 12: 관광지
-          lDongRegnCd: areaCode,
-          lDongSignguCd: sigunguCode,
+          // 법정동 코드(lDongRegnCd/lDongSignguCd)가 아니라 TourAPI 지역코드를 씁니다.
+          // Region.areaCode/sigunguCode가 TourAPI 지역코드 체계이기 때문입니다.
+          areaCode,
+          sigunguCode,
           arrange: "A",
         },
       });

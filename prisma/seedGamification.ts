@@ -44,6 +44,24 @@ const badges = [
     startAt: new Date("2026-09-01"),
     endAt: new Date("2026-11-30"),
   },
+  {
+    key: "summer_2026_night_market",
+    name: "여름밤 야시장 스페셜 퀘스트",
+    description: "여름 한정 야시장 로컬 맛집을 방문 인증하면 획득할 수 있는 시즌 한정 뱃지입니다.",
+    icon: "night-market",
+    type: "SEASONAL",
+    startAt: new Date("2026-08-01"),
+    endAt: new Date("2026-08-31"),
+  },
+  {
+    key: "summer_2026_watermelon_beach",
+    name: "수박 비치 파티 퀘스트",
+    description: "여름 해변가 수박 축제 스팟을 방문 인증하면 획득할 수 있는 시즌 한정 뱃지입니다.",
+    icon: "watermelon",
+    type: "SEASONAL",
+    startAt: new Date("2026-08-10"),
+    endAt: new Date("2026-09-10"),
+  },
 ];
 
 async function main() {

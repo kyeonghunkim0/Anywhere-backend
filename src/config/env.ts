@@ -8,6 +8,9 @@ export const env = {
   JWT_SECRET: process.env.JWT_SECRET || "fallback-secret",
   JWT_EXPIRES_IN: process.env.JWT_EXPIRES_IN || "7d",
   TOUR_API_KEY: process.env.TOUR_API_KEY || "",
+  // 관광사진갤러리(PhotoGalleryService1)용 인증키.
+  // 별도로 발급받지 않았다면 TOUR_API_KEY를 그대로 사용합니다.
+  PHOTO_API_KEY: process.env.PHOTO_API_KEY || process.env.TOUR_API_KEY || "",
   GOOGLE_CLIENT_ID: process.env.GOOGLE_CLIENT_ID || "",
   APPLE_CLIENT_ID: process.env.APPLE_CLIENT_ID || "",
   SYNC_CRON_SCHEDULE: process.env.SYNC_CRON_SCHEDULE || "0 3 * * *",

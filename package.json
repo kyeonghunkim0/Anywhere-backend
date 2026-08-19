@@ -11,7 +11,8 @@
     "prisma:migrate": "prisma migrate dev",
     "prisma:studio": "prisma studio",
     "seed": "tsx prisma/seed.ts",
-    "seed:gamification": "tsx prisma/seedGamification.ts"
+    "seed:gamification": "tsx prisma/seedGamification.ts",
+    "seed:region-photos": "tsx prisma/seedRegionPhotos.ts"
   },
   "keywords": [],
   "author": "",

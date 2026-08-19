@@ -11,6 +11,7 @@ interface GrowthRegionItem {
   current: number;
   target: number;
   remaining: number; // "N명만 더 오면 레벨업!"
+  imageUrl: string | null; // 지역 대표 사진
 }
 
 /**
@@ -44,6 +45,7 @@ export async function getGrowthRegions(limit: number = 10): Promise<GrowthRegion
       current: nextTarget.current,
       target: nextTarget.target,
       remaining: nextTarget.remaining,
+      imageUrl: region.imageUrl,
     }));
 }
 
@@ -70,6 +72,8 @@ interface RegionDetailResult {
   progressLabel: string; // "5.3%" 등 progress bar용
   remainLabel: string; // "15명만 더 오면 레벨업!"
   quote: string | null;
+  imageUrl: string | null; // 지역 대표 사진
+  imageCredit: string | null; // 촬영자 (라이선스 표시용)
   stats: RegionStat[];
   levels: RegionLevelRow[];
 }
@@ -111,6 +115,8 @@ export async function getRegionDetail(regionId: string): Promise<RegionDetailRes
       ? `${nextTarget.remaining}명만 더 오면 레벨업!`
       : "최고 레벨을 달성했어요!",
     quote: region.quote,
+    imageUrl: region.imageUrl,
+    imageCredit: region.imageCredit,
     stats: [
       { label: "누적 방문", value: visitorCount },
       { label: "방문자 수", value: uniqueVisitorCount.length },

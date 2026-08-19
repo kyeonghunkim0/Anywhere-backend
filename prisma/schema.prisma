@@ -49,6 +49,12 @@ model Region {
   visitCount    Int     @default(0) // 누적 방문(체크인) 횟수 - 레벨 계산용 카운터
   quote         String? // 주민 한마디 (여권 지역 상세용 플레이버 텍스트)
 
+  // 지역 대표 사진 (한국관광공사 관광사진갤러리 기반, seedRegionPhotos 스크립트가 채움)
+  imageUrl       String?   // 대표 사진 URL (https)
+  imageCredit    String?   // 촬영자 - 공공데이터 라이선스 표시 의무
+  imageSource    String?   // "gallery"(관광사진갤러리) | "place"(관광지 썸네일 폴백)
+  imageUpdatedAt DateTime? // 마지막 사진 갱신 시각
+
   places Place[]
   stamps UserStamp[]
   badges Badge[]

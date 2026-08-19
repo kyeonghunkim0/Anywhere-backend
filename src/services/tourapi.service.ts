@@ -1,6 +1,7 @@
 import axios from "axios";
 import { prisma } from "../utils/prisma.js";
 import { env } from "../config/env.js";
+import { isRetryable, delay } from "../utils/tourApi.js";
 
 const TOUR_API_BASE = "https://apis.data.go.kr/B551011/KorService2";
 
@@ -16,18 +17,6 @@ interface TourApiItem {
 
 const MAX_RETRY = 3;
 const RETRY_BASE_DELAY_MS = 500;
-
-/** 재시도해볼 만한 실패인지 판별합니다 (네트워크 오류 · 429 · 5xx). */
-function isRetryable(error: unknown): boolean {
-  if (!axios.isAxiosError(error)) return false;
-  const status = error.response?.status;
-  if (status === undefined) return true; // 응답 자체를 못 받음 = 네트워크 오류
-  return status === 429 || status >= 500;
-}
-
-function delay(ms: number): Promise<void> {
-  return new Promise((resolve) => setTimeout(resolve, ms));
-}
 
 /**
  * TourAPI 4.0 지역기반 관광정보 조회

@@ -28,6 +28,7 @@ interface MatchResult {
     sidoName: string;
     sigunguName: string;
     isDepopulated: boolean;
+    imageUrl: string | null; // 지역 대표 사진
   };
   matchInfo: {
     remainingMatches: number; // 오늘 남은 매칭 횟수
@@ -118,6 +119,7 @@ export async function getRandomMatch(input: MatchInput): Promise<MatchResult | n
       sidoName: selected.region.sidoName,
       sigunguName: selected.region.sigunguName,
       isDepopulated: selected.region.isDepopulated,
+      imageUrl: selected.region.imageUrl,
     },
     matchInfo: {
       remainingMatches,
@@ -216,6 +218,7 @@ interface CurrentTripResult {
     sidoName: string;
     sigunguName: string;
     isDepopulated: boolean;
+    imageUrl: string | null; // 지역 대표 사진
   };
 }
 
@@ -236,6 +239,7 @@ function toCurrentTrip(
         sidoName: string;
         sigunguName: string;
         isDepopulated: boolean;
+        imageUrl: string | null;
       };
     };
   }
@@ -252,7 +256,15 @@ function toCurrentTrip(
       mapX: matchHistory.place.mapX,
       mapY: matchHistory.place.mapY,
     },
-    region: matchHistory.place.region,
+    // region은 Prisma 객체를 그대로 넘기지 않고 필요한 필드만 추립니다
+    // (imageCredit 등 클라이언트에 불필요한 컬럼이 새어나가지 않도록)
+    region: {
+      id: matchHistory.place.region.id,
+      sidoName: matchHistory.place.region.sidoName,
+      sigunguName: matchHistory.place.region.sigunguName,
+      isDepopulated: matchHistory.place.region.isDepopulated,
+      imageUrl: matchHistory.place.region.imageUrl,
+    },
   };
 }
 

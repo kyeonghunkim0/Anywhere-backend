@@ -149,6 +149,12 @@ export const swaggerDocument: JsonObject = {
           sidoName: { type: "string", example: "서울특별시" },
           sigunguName: { type: "string", example: "종로구" },
           isDepopulated: { type: "boolean", example: false },
+          imageUrl: {
+            type: "string",
+            nullable: true,
+            example: "https://tong.visitkorea.or.kr/cms2/website/52/2586952.jpg",
+            description: "지역 대표 사진 (한국관광공사 관광사진갤러리)",
+          },
         },
       },
       MatchInfo: {
@@ -760,7 +766,8 @@ export const swaggerDocument: JsonObject = {
       get: {
         tags: ["Regions"],
         summary: "지역 상세 (로컬 성장 게이지)",
-        description: "지역 레벨, 다음 레벨까지 진행률, 방문 통계, 레벨별 보상 달성 현황을 반환합니다.",
+        description:
+          "지역 레벨, 다음 레벨까지 진행률, 방문 통계, 레벨별 보상 달성 현황과 지역 대표 사진(imageUrl · imageCredit)을 반환합니다.",
         parameters: [
           { name: "regionId", in: "path", required: true, schema: { type: "string" } },
         ],

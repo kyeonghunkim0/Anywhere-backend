@@ -28,8 +28,8 @@ const tags = [
 const badges = [
   {
     key: "jinhae_2026_spring",
-    name: "진해 군항제 한정 벚꽃 뱃지",
-    description: "진해 군항제 기간에만 방문 인증으로 획득할 수 있는 시즌 한정 뱃지입니다.",
+    name: "진해 군항제 벚꽃",
+    description: "군항제 방문 인증",
     icon: "cherry-blossom",
     type: "SEASONAL",
     startAt: new Date("2026-03-28"),
@@ -38,7 +38,7 @@ const badges = [
   {
     key: "autumn_secret_fishing_spot",
     name: "강태공의 계절",
-    description: "가을 비밀 낚시터를 방문하면 획득할 수 있는 시즌 한정 뱃지입니다.",
+    description: "비밀 낚시터 방문 인증",
     icon: "fish",
     type: "SEASONAL",
     startAt: new Date("2026-09-01"),
@@ -46,8 +46,8 @@ const badges = [
   },
   {
     key: "summer_2026_night_market",
-    name: "여름밤 야시장 스페셜 퀘스트",
-    description: "여름 한정 야시장 로컬 맛집을 방문 인증하면 획득할 수 있는 시즌 한정 뱃지입니다.",
+    name: "여름밤 야시장",
+    description: "야시장 맛집 방문 인증",
     icon: "night-market",
     type: "SEASONAL",
     startAt: new Date("2026-08-01"),
@@ -55,8 +55,8 @@ const badges = [
   },
   {
     key: "summer_2026_watermelon_beach",
-    name: "수박 비치 파티 퀘스트",
-    description: "여름 해변가 수박 축제 스팟을 방문 인증하면 획득할 수 있는 시즌 한정 뱃지입니다.",
+    name: "수박 비치 파티",
+    description: "해변 수박 축제 방문 인증",
     icon: "watermelon",
     type: "SEASONAL",
     startAt: new Date("2026-08-10"),

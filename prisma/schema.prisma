@@ -4,6 +4,9 @@
 generator client {
   provider = "prisma-client"
   output   = "../src/generated/prisma"
+  // package.json이 commonjs이므로 CJS로 생성해야 합니다.
+  // 기본값(ESM)으로 두면 빌드는 통과해도 `npm start`가 SyntaxError로 죽습니다.
+  moduleFormat = "cjs"
 }
 
 datasource db {

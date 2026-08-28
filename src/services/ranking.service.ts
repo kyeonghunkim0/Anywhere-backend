@@ -1,5 +1,6 @@
 import { prisma } from "../utils/prisma.js";
 import { NotFoundError } from "../utils/errors.js";
+import { formatRegionName } from "../utils/regionName.js";
 
 interface UserRankItem {
   rank: number;
@@ -13,6 +14,7 @@ interface PlaceRankItem {
   regionId: string;
   sidoName: string;
   sigunguName: string;
+  displayName: string; // 화면 표시용 (예: "부산 중구")
   isDepopulated: boolean;
   visitCount: number;
 }
@@ -85,6 +87,7 @@ export async function getPlaceRanking(): Promise<PlaceRankItem[]> {
       regionId: item.regionId,
       sidoName: region?.sidoName ?? "",
       sigunguName: region?.sigunguName ?? "",
+      displayName: region ? formatRegionName(region.sidoName, region.sigunguName) : "",
       isDepopulated: region?.isDepopulated ?? false,
       visitCount: item._count.id,
     };

@@ -17,13 +17,13 @@ export const swaggerDocument: JsonObject = {
       "| 401 | 토큰 없음 · 만료 · 무효 (소셜 idToken 검증 실패 포함) |\n" +
       "| 404 | 리소스 없음 · 존재하지 않는 경로 |\n" +
       "| 409 | 중복 데이터 (unique 제약 위반) |\n" +
-      "| 429 | 요청 횟수 제한 초과 (매칭 일 3회) |\n" +
+      "| 429 | 요청 횟수 제한 초과 (매칭 일 20회) |\n" +
       "| 500 | 그 외 서버 오류. `message`는 항상 `\"서버 오류가 발생했습니다.\"` |\n\n" +
       "등록되지 않은 경로로 요청하면 HTML이 아닌 위 형식의 404 JSON이 반환됩니다. " +
       "각 엔드포인트에 개별 명시되지 않은 400/500 응답도 동일한 규약을 따릅니다.\n\n" +
       "### 주요 기능\n" +
       "- 🔐 Apple / Google 소셜 로그인\n" +
-      "- 🎯 인구감소지역 가중치 기반 랜덤 관광지 매칭 (일 3회 제한)\n" +
+      "- 🎯 인구감소지역 가중치 기반 랜덤 관광지 매칭 (일 20회 제한)\n" +
       "- 📍 GPS 기반 반경 500m 체크인 (인구감소지역 보상 2배)\n" +
       "- 📘 228개 지역 여권(도장) 수집 현황\n" +
       "- 🏆 유저 / 인기 지역 랭킹 + 내 랭킹 조회\n" +
@@ -148,6 +148,7 @@ export const swaggerDocument: JsonObject = {
           id: { type: "string" },
           sidoName: { type: "string", example: "서울특별시" },
           sigunguName: { type: "string", example: "종로구" },
+          displayName: { type: "string", example: "서울 종로구" },
           isDepopulated: { type: "boolean", example: false },
           imageUrl: {
             type: "string",
@@ -200,6 +201,7 @@ export const swaggerDocument: JsonObject = {
           nickname: { type: "string", example: "여행자" },
           sidoName: { type: "string", example: "전라남도" },
           sigunguName: { type: "string", example: "신안군" },
+          displayName: { type: "string", example: "전남 신안군" },
           placeName: { type: "string", example: "증도 태평염전" },
           isDepopulated: { type: "boolean", example: true },
           checkedInAt: { type: "string", format: "date-time" },
@@ -325,7 +327,7 @@ export const swaggerDocument: JsonObject = {
         description:
           "사용자 현재 GPS 기반으로 반경 내 관광지 중 랜덤 1곳을 반환합니다.\n\n" +
           "- 인구감소지역에 70% 가중치 적용\n" +
-          "- **하루 최대 3회** 매칭 가능 (초과 시 429 응답)\n" +
+          "- **하루 최대 20회** 매칭 가능 (초과 시 429 응답)\n" +
           "- 이미 방문한 장소는 우선순위가 낮아집니다",
         security: [{ BearerAuth: [] }],
         parameters: [
@@ -380,7 +382,7 @@ export const swaggerDocument: JsonObject = {
           "401": { description: "인증 필요" },
           "404": { description: "주변에 매칭 가능한 관광지 없음" },
           "429": {
-            description: "일일 매칭 횟수 초과 (3회)",
+            description: "일일 매칭 횟수 초과 (20회)",
             content: {
               "application/json": {
                 schema: { $ref: "#/components/schemas/Error" },
@@ -539,6 +541,7 @@ export const swaggerDocument: JsonObject = {
                               regionId: { type: "string" },
                               sidoName: { type: "string" },
                               sigunguName: { type: "string" },
+                              displayName: { type: "string", example: "부산 중구" },
                               isDepopulated: { type: "boolean" },
                               isVisited: { type: "boolean" },
                               visitCount: { type: "integer" },
@@ -620,6 +623,7 @@ export const swaggerDocument: JsonObject = {
                           regionId: { type: "string" },
                           sidoName: { type: "string" },
                           sigunguName: { type: "string" },
+                          displayName: { type: "string", example: "부산 중구" },
                           isDepopulated: { type: "boolean" },
                           visitCount: { type: "integer" },
                         },

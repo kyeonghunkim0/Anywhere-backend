@@ -1,8 +1,9 @@
 import { prisma } from "../utils/prisma.js";
 import { haversineDistance } from "../utils/haversine.js";
 import { NotFoundError, RateLimitError, ValidationError } from "../utils/errors.js";
+import { formatRegionName } from "../utils/regionName.js";
 
-const MAX_DAILY_MATCHES = 3;
+const MAX_DAILY_MATCHES = 20;
 
 interface MatchInput {
   userId: string;
@@ -27,6 +28,7 @@ interface MatchResult {
     id: string;
     sidoName: string;
     sigunguName: string;
+    displayName: string; // 화면 표시용 (예: "부산 중구")
     isDepopulated: boolean;
     imageUrl: string | null; // 지역 대표 사진
   };
@@ -40,7 +42,7 @@ interface MatchResult {
  * 사용자 GPS 기반 랜덤 관광지 매칭
  * - 반경 N km 이내의 관광지 중 랜덤 1곳 반환
  * - 인구감소지역 70% 가중치 적용
- * - 하루 최대 3회 제한
+ * - 하루 최대 20회 제한
  * - 이미 방문한 장소는 우선순위를 낮춤
  */
 export async function getRandomMatch(input: MatchInput): Promise<MatchResult | null> {
@@ -118,6 +120,7 @@ export async function getRandomMatch(input: MatchInput): Promise<MatchResult | n
       id: selected.region.id,
       sidoName: selected.region.sidoName,
       sigunguName: selected.region.sigunguName,
+      displayName: formatRegionName(selected.region.sidoName, selected.region.sigunguName),
       isDepopulated: selected.region.isDepopulated,
       imageUrl: selected.region.imageUrl,
     },
@@ -217,6 +220,7 @@ interface CurrentTripResult {
     id: string;
     sidoName: string;
     sigunguName: string;
+    displayName: string; // 화면 표시용 (예: "부산 중구")
     isDepopulated: boolean;
     imageUrl: string | null; // 지역 대표 사진
   };
@@ -262,6 +266,10 @@ function toCurrentTrip(
       id: matchHistory.place.region.id,
       sidoName: matchHistory.place.region.sidoName,
       sigunguName: matchHistory.place.region.sigunguName,
+      displayName: formatRegionName(
+        matchHistory.place.region.sidoName,
+        matchHistory.place.region.sigunguName
+      ),
       isDepopulated: matchHistory.place.region.isDepopulated,
       imageUrl: matchHistory.place.region.imageUrl,
     },

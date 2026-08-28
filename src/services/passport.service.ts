@@ -1,10 +1,12 @@
 import { prisma } from "../utils/prisma.js";
 import { NotFoundError } from "../utils/errors.js";
+import { formatRegionName } from "../utils/regionName.js";
 
 interface PassportRegion {
   regionId: string;
   sidoName: string;
   sigunguName: string;
+  displayName: string; // 화면 표시용 (예: "부산 중구")
   isDepopulated: boolean;
   isVisited: boolean;
   visitCount: number;
@@ -69,6 +71,7 @@ export async function getPassport(userId: string): Promise<PassportResult> {
       regionId: region.id,
       sidoName: region.sidoName,
       sigunguName: region.sigunguName,
+      displayName: formatRegionName(region.sidoName, region.sigunguName),
       isDepopulated: region.isDepopulated,
       isVisited: !!visited,
       visitCount: visited?.count ?? 0,

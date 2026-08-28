@@ -1,4 +1,5 @@
 import { prisma } from "../utils/prisma.js";
+import { formatRegionName } from "../utils/regionName.js";
 
 interface TagItem {
   id: string;
@@ -32,6 +33,7 @@ interface TaggedPlace {
   thumbnail: string | null;
   sidoName: string;
   sigunguName: string;
+  displayName: string; // 화면 표시용 (예: "부산 중구")
   isDepopulated: boolean;
 }
 
@@ -51,6 +53,7 @@ export async function getPlacesByTag(tagId: string): Promise<TaggedPlace[]> {
     thumbnail: place.thumbnail,
     sidoName: place.region.sidoName,
     sigunguName: place.region.sigunguName,
+    displayName: formatRegionName(place.region.sidoName, place.region.sigunguName),
     isDepopulated: place.region.isDepopulated,
   }));
 }

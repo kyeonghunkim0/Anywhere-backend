@@ -1,10 +1,12 @@
 import { prisma } from "../utils/prisma.js";
+import { formatRegionName } from "../utils/regionName.js";
 
 interface FeedItem {
   id: string;
   nickname: string;
   sidoName: string;
   sigunguName: string;
+  displayName: string; // 화면 표시용 (예: "부산 중구")
   placeName: string;
   isDepopulated: boolean;
   checkedInAt: Date;
@@ -45,7 +47,7 @@ export async function getRecentFeed(limit: number = 20): Promise<FeedResult> {
   const totalCount = await prisma.userStamp.count();
 
   const items: FeedItem[] = recentStamps.map((stamp) => {
-    const regionLabel = `${stamp.region.sidoName} ${stamp.region.sigunguName}`;
+    const regionLabel = formatRegionName(stamp.region.sidoName, stamp.region.sigunguName);
     const depopulatedEmoji = stamp.region.isDepopulated ? "🌟 " : "";
 
     return {
@@ -53,6 +55,7 @@ export async function getRecentFeed(limit: number = 20): Promise<FeedResult> {
       nickname: stamp.user.nickname,
       sidoName: stamp.region.sidoName,
       sigunguName: stamp.region.sigunguName,
+      displayName: regionLabel,
       placeName: stamp.place.name,
       isDepopulated: stamp.region.isDepopulated,
       checkedInAt: stamp.checkedInAt,

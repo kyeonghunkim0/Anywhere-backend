@@ -1,11 +1,13 @@
 import { prisma } from "../utils/prisma.js";
 import { REGION_LEVELS, getNextRegionLevelTarget } from "../utils/gamification.js";
 import { NotFoundError } from "../utils/errors.js";
+import { formatRegionName } from "../utils/regionName.js";
 
 interface GrowthRegionItem {
   regionId: string;
   sidoName: string;
   sigunguName: string;
+  displayName: string; // 화면 표시용 (예: "부산 중구")
   isDepopulated: boolean;
   level: number;
   current: number;
@@ -40,6 +42,7 @@ export async function getGrowthRegions(limit: number = 10): Promise<GrowthRegion
       regionId: region.id,
       sidoName: region.sidoName,
       sigunguName: region.sigunguName,
+      displayName: formatRegionName(region.sidoName, region.sigunguName),
       isDepopulated: region.isDepopulated,
       level: region.level,
       current: nextTarget.current,
@@ -65,6 +68,7 @@ interface RegionDetailResult {
   regionId: string;
   sidoName: string;
   sigunguName: string;
+  displayName: string; // 화면 표시용 (예: "부산 중구")
   isDepopulated: boolean;
   level: number;
   current: number;
@@ -106,6 +110,7 @@ export async function getRegionDetail(regionId: string): Promise<RegionDetailRes
     regionId: region.id,
     sidoName: region.sidoName,
     sigunguName: region.sigunguName,
+    displayName: formatRegionName(region.sidoName, region.sigunguName),
     isDepopulated: region.isDepopulated,
     level: region.level,
     current: region.visitCount,

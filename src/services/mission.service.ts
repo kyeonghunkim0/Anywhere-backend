@@ -1,6 +1,7 @@
 import { prisma } from "../utils/prisma.js";
 import { isWithinRadius } from "../utils/haversine.js";
 import { getRegionLevel } from "../utils/gamification.js";
+import { formatRegionName } from "../utils/regionName.js";
 
 interface CheckInInput {
   userId: string;
@@ -158,7 +159,7 @@ export async function checkIn(input: CheckInInput): Promise<CheckInResult> {
     stamp: {
       id: stamp.id,
       placeName: place.name,
-      regionName: `${place.region.sidoName} ${place.region.sigunguName}`,
+      regionName: formatRegionName(place.region.sidoName, place.region.sigunguName),
       isDepopulated,
       bonusMultiplier,
       stampsEarned,

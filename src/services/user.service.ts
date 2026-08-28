@@ -1,4 +1,5 @@
 import { prisma } from "../utils/prisma.js";
+import { formatRegionName } from "../utils/regionName.js";
 import { getUserLevel } from "../utils/gamification.js";
 import { getMyRanking } from "./ranking.service.js";
 import { NotFoundError, ValidationError } from "../utils/errors.js";
@@ -108,7 +109,10 @@ export async function getMyProfileStats(userId: string): Promise<ProfileStatsRes
     recentStamp: recentStamp
       ? {
           placeName: recentStamp.place.name,
-          regionName: `${recentStamp.region.sidoName} ${recentStamp.region.sigunguName}`,
+          regionName: formatRegionName(
+            recentStamp.region.sidoName,
+            recentStamp.region.sigunguName
+          ),
           checkedInAt: recentStamp.checkedInAt,
         }
       : null,
@@ -172,6 +176,7 @@ interface RepresentativeStamp {
   regionId: string;
   sidoName: string;
   sigunguName: string;
+  displayName: string; // 화면 표시용 (예: "부산 중구")
   visitCount: number;
 }
 
@@ -275,6 +280,7 @@ async function getTopRegions(userId: string, limit: number): Promise<Representat
       regionId: g.regionId,
       sidoName: region?.sidoName ?? "",
       sigunguName: region?.sigunguName ?? "",
+      displayName: region ? formatRegionName(region.sidoName, region.sigunguName) : "",
       visitCount: g._count.id,
     };
   });

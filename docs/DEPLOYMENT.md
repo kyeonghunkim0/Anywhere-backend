@@ -169,3 +169,109 @@ bash deploy/oracle-cloud/deploy.sh <브랜치명>   # 예: bash deploy/oracle-cl
 즉:
 - `npm run dev` (tsx) → 항상 정상, 로컬 개발은 이걸로 계속 쓰면 됨
 - `npm run build && npm run start` (컴파일 후 실행, 운영과 동일한 방식) → 반드시 배포 전에 로컬에서 한 번 검증할 것
+
+---
+
+## 6. 릴리스 체크리스트 (변경사항을 운영에 반영하기)
+
+§3이 "어떤 명령을 치는가"라면, 이 절은 "무엇을 확인하고 치는가"입니다. 변경 종류에 따라 필요한 단계가 달라집니다.
+
+### 6-1. 변경 종류별 필요 작업
+
+| 변경 종류 | 마이그레이션 | 시드 재실행 | 앱 릴리스 필요 | 비고 |
+|---|---|---|---|---|
+| 응답 필드 **추가** (예: `displayName`) | 불필요 | 불필요 | 불필요 | 기존 앱은 모르는 필드를 무시하므로 하위 호환 |
+| 응답 필드 **삭제·이름 변경** | 불필요 | 불필요 | **필요** | 구버전 앱이 깨짐. 앱 강제 업데이트(`APP_MIN_VERSION`)와 함께 계획할 것 |
+| `schema.prisma` 변경 | **필요** (로컬에서 파일 생성 후 커밋) | 경우에 따라 | 경우에 따라 | `deploy.sh`가 `migrate deploy`로 적용 |
+| 시드 데이터 문구·값 변경 (뱃지/태그 등) | 불필요 | **필요** (서버에서 수동 실행) | 불필요 | `npm run seed:gamification` 등은 upsert라 재실행 안전 |
+| 환경변수 추가 | 불필요 | 불필요 | 불필요 | 운영 `.env`에 값을 **먼저** 넣고 배포 (§2-4) |
+| 상수·로직 변경 | 불필요 | 불필요 | 불필요 | 아래 6-2의 "개발용 임시 값" 항목 주의 |
+
+### 6-2. 배포 전 확인 (로컬)
+
+- [ ] `npm run build` 성공
+- [ ] `npm run build && npm start` 로 운영과 동일한 방식으로 한 번 기동 (§5 참고)
+- [ ] **개발 편의로 바꾼 임시 값이 남아 있지 않은지 확인.** 예: `MAX_DAILY_MATCHES`(하루 매칭 제한, 운영값 3), `MAINTENANCE_MODE`
+- [ ] **테스트 전용 시드가 운영에서 실행될 여지가 없는지 확인.** `npm run seed:test-places`는 가짜 관광지(`contentId`가 `TEST-`로 시작)를 넣으므로 **로컬 전용**이다. `deploy.sh`는 시드를 실행하지 않으니 사람이 직접 치지만 않으면 안전하다
+- [ ] `schema.prisma`를 건드렸다면 마이그레이션 파일이 커밋에 포함됐는지
+- [ ] `.env.example`에 새 변수가 반영됐는지
+
+### 6-3. 반영
+
+```bash
+# 로컬
+git checkout develop
+git merge feat/<작업 브랜치>
+git push origin develop
+
+git checkout master && git merge develop && git push origin master
+```
+
+```bash
+# 서버
+ssh -i <SSH 키 경로> opc@161.33.223.198
+cd /opt/anywhere
+bash deploy/oracle-cloud/deploy.sh master
+```
+
+### 6-4. 배포 후 확인
+
+```bash
+# 서버에서
+sudo systemctl status anywhere
+sudo journalctl -u anywhere -n 50 --no-pager     # 기동 에러 확인
+
+# 어디서든
+curl -s http://161.33.223.198/health
+curl -s http://161.33.223.198/api/ranking/places | head -c 300   # 실제 변경된 응답 확인
+```
+
+시드 재실행이 필요한 변경이었다면 이 시점에 서버에서 한 번 돌립니다:
+
+```bash
+cd /opt/anywhere && npm run seed:gamification
+```
+
+### 6-5. 롤백
+
+`deploy.sh`는 브랜치를 받으므로, 직전 커밋으로 되돌릴 때도 같은 스크립트를 씁니다.
+
+```bash
+# 로컬에서 master를 되돌려 push (되돌림 커밋 방식이 안전)
+git checkout master && git revert <문제 커밋> && git push origin master
+# 서버에서 다시 배포
+bash deploy/oracle-cloud/deploy.sh master
+```
+
+마이그레이션이 포함된 배포는 코드만 되돌려도 스키마는 남습니다. 되돌릴 수 있는 형태(컬럼 추가는 안전, 삭제·이름 변경은 위험)로 나눠서 배포하세요.
+
+---
+
+## 7. 클라이언트(iOS) 연동 — baseURL
+
+앱은 `Projects/AnywhereApp/Sources/AnywhereApp.swift`의 `init()`에서 빌드 구성에 따라 baseURL을 정합니다.
+
+| 빌드 | baseURL | 비고 |
+|---|---|---|
+| DEBUG | `http://<맥의 LAN IP>:3000` | 실기기는 `localhost`로 붙을 수 없다. 카페·핫스팟 등 네트워크가 바뀌면 IP도 바뀌므로 그때마다 수정해야 한다 (`ipconfig getifaddr en0`) |
+| RELEASE | 운영 서버 주소 | 아래 ATS 제약 참고 |
+
+### 7-1. ATS(App Transport Security) 제약
+
+`Tuist/Config/Info.plist`의 ATS 설정은 현재 `NSAllowsLocalNetworking`만 켜져 있습니다. 이건 **사설 IP 대역(192.168.x.x, 172.16~31.x.x 등)에 대한 평문 HTTP만** 허용합니다. 즉:
+
+- DEBUG에서 맥 LAN IP로 붙는 것 → 통과
+- RELEASE에서 `http://161.33.223.198`(공인 IP, 평문 HTTP)로 붙는 것 → **iOS가 차단**
+
+따라서 운영 배포 전에 **도메인 + HTTPS**가 필요합니다:
+
+1. 도메인을 사서 A 레코드를 `161.33.223.198`로 지정
+2. `deploy/oracle-cloud/nginx.conf`의 `server_name`을 실제 도메인으로 교체
+3. 서버에서 `sudo certbot --nginx -d api.<도메인>` 으로 인증서 발급 (nginx 블록이 자동으로 443으로 재작성됨)
+4. 앱의 RELEASE baseURL을 `https://api.<도메인>` 으로 변경
+
+> Let's Encrypt는 IP 주소로는 인증서를 발급하지 않습니다. ATS 예외(`NSExceptionDomains`)로 평문 HTTP를 뚫는 방법도 있지만 App Store 심사에서 사유를 요구받으므로, 도메인 + HTTPS가 정석입니다.
+
+### 7-2. baseURL을 코드에서 빼는 것을 권장
+
+지금은 IP가 소스에 하드코딩되어 있어 네트워크가 바뀔 때마다 커밋이 생깁니다. xcconfig에 `API_BASE_URL`을 두고 Info.plist를 거쳐 읽으면 빌드 구성만 바꿔 전환할 수 있습니다. (아직 적용 안 됨 — TODO)

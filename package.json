@@ -12,7 +12,8 @@
     "prisma:studio": "prisma studio",
     "seed": "tsx prisma/seed.ts",
     "seed:gamification": "tsx prisma/seedGamification.ts",
-    "seed:region-photos": "tsx prisma/seedRegionPhotos.ts"
+    "seed:region-photos": "tsx prisma/seedRegionPhotos.ts",
+    "seed:test-places": "tsx prisma/seedTestPlaces.ts"
   },
   "keywords": [],
   "author": "",

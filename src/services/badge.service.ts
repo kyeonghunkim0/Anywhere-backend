@@ -1,4 +1,5 @@
 import { prisma } from "../utils/prisma.js";
+import { toPublicAssetUrl } from "../utils/assetUrl.js";
 
 type BadgeStatus = "EARNED" | "AVAILABLE" | "EXPIRED";
 
@@ -28,8 +29,12 @@ interface BadgeItem {
 export async function getUserBadges(userId: string): Promise<BadgeItem[]> {
   const now = new Date();
 
+  // 기초자치단체(REGION) 뱃지는 여권/수집판 전용이므로 이 목록에서는 제외한다.
   const [badges, userBadges] = await Promise.all([
-    prisma.badge.findMany({ orderBy: { createdAt: "desc" } }),
+    prisma.badge.findMany({
+      where: { type: { not: "REGION" } },
+      orderBy: { createdAt: "desc" },
+    }),
     prisma.userBadge.findMany({ where: { userId } }),
   ]);
 
@@ -63,7 +68,7 @@ export async function getUserBadges(userId: string): Promise<BadgeItem[]> {
         key: badge.key,
         name: badge.name,
         description: badge.description,
-        icon: badge.icon,
+        icon: toPublicAssetUrl(badge.icon) ?? badge.icon,
         type: badge.type,
         status,
         earnedAt,
@@ -103,7 +108,7 @@ export async function getActiveSeasonalBadges(): Promise<BadgeItem[]> {
       key: badge.key,
       name: badge.name,
       description: badge.description,
-      icon: badge.icon,
+      icon: toPublicAssetUrl(badge.icon) ?? badge.icon,
       type: badge.type,
       status: "AVAILABLE",
       earnedAt: null,
@@ -116,4 +121,43 @@ export async function getActiveSeasonalBadges(): Promise<BadgeItem[]> {
       placeId: badge.placeId,
     };
   });
+}
+
+// ============================================
+// 기초자치단체(REGION) 뱃지 - 여권/수집판용
+// ============================================
+
+export interface RegionBadgeSummary {
+  key: string;
+  name: string;
+  description: string;
+  icon: string; // 절대 URL로 변환된 아이콘 주소
+}
+
+/**
+ * regionId → 해당 지역의 기초자치단체 뱃지 요약 맵.
+ * 여권(passport)·수집판(regions/growth)에서 지역마다 뱃지를 붙일 때 사용한다.
+ * regionIds를 주면 그 지역만, 없으면 전체 REGION 뱃지를 조회한다.
+ */
+export async function getRegionBadgeMap(
+  regionIds?: string[]
+): Promise<Map<string, RegionBadgeSummary>> {
+  const badges = await prisma.badge.findMany({
+    where: {
+      type: "REGION",
+      regionId: regionIds ? { in: regionIds } : { not: null },
+    },
+  });
+
+  const map = new Map<string, RegionBadgeSummary>();
+  for (const badge of badges) {
+    if (!badge.regionId) continue;
+    map.set(badge.regionId, {
+      key: badge.key,
+      name: badge.name,
+      description: badge.description,
+      icon: toPublicAssetUrl(badge.icon) ?? badge.icon,
+    });
+  }
+  return map;
 }

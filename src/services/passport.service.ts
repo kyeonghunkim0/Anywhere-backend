@@ -1,6 +1,7 @@
 import { prisma } from "../utils/prisma.js";
 import { NotFoundError } from "../utils/errors.js";
 import { formatRegionName } from "../utils/regionName.js";
+import { getRegionBadgeMap, RegionBadgeSummary } from "./badge.service.js";
 
 interface PassportRegion {
   regionId: string;
@@ -13,6 +14,7 @@ interface PassportRegion {
   lastVisitedAt: Date | null;
   level: number; // 지역 로컬 성장 레벨
   visitorNumber: number | null; // 내가 그 지역의 몇 번째 방문자였는지 (최초 방문 기준)
+  badge: RegionBadgeSummary | null; // 기초자치단체 수집판 뱃지 (없으면 null)
 }
 
 interface PassportResult {
@@ -64,6 +66,9 @@ export async function getPassport(userId: string): Promise<PassportResult> {
     ])
   );
 
+  // 지역별 기초자치단체 뱃지
+  const badgeMap = await getRegionBadgeMap(allRegions.map((r) => r.id));
+
   // 228개 지역 매핑
   const regions: PassportRegion[] = allRegions.map((region) => {
     const visited = visitedMap.get(region.id);
@@ -78,6 +83,7 @@ export async function getPassport(userId: string): Promise<PassportResult> {
       lastVisitedAt: visited?.lastVisitedAt ?? null,
       level: region.level,
       visitorNumber: visited?.visitorNumber ?? null,
+      badge: badgeMap.get(region.id) ?? null,
     };
   });
 

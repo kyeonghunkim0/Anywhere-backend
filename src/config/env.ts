@@ -21,6 +21,10 @@ export const env = {
   APPLE_CLIENT_ID: process.env.APPLE_CLIENT_ID || "",
   SYNC_CRON_SCHEDULE: process.env.SYNC_CRON_SCHEDULE || "0 3 * * *",
 
+  // 정적 파일(뱃지 아이콘 등)을 절대 URL로 내려줄 때 붙일 서버 공개 주소.
+  // 예: https://api.anywhere.app · 로컬 개발은 http://localhost:3000
+  PUBLIC_BASE_URL: process.env.PUBLIC_BASE_URL || "http://localhost:3000",
+
   // 앱 정보 (최초 실행 시 클라이언트 버전/점검 상태 확인용)
   APP_LATEST_VERSION: process.env.APP_LATEST_VERSION || "1.0.0",
   APP_MIN_VERSION: process.env.APP_MIN_VERSION || "1.0.0", // 이 버전 미만은 강제 업데이트

@@ -53,6 +53,7 @@ staging이 필요해지는 시점의 신호:
 | `DATABASE_URL` | 로컬 DB와 운영 DB 계정/비밀번호가 다름 |
 | `NODE_ENV` | `production`일 때만 `src/config/env.ts`의 운영 가드(기본 시크릿 차단 등)가 활성화됨 |
 | `MAINTENANCE_MODE`, `APP_LATEST_VERSION`, `APP_MIN_VERSION` | 운영 토글이므로 로컬에서 건드릴 필요 없음 |
+| `PUBLIC_BASE_URL` | 뱃지 아이콘 등 `/static` 파일을 절대 URL로 내려줄 때 앞에 붙는 주소. 로컬은 개발 PC의 LAN IP(`http://192.168.x.x:3000`), 운영은 `http://161.33.223.198`(도메인+HTTPS 적용 후 `https://api.<도메인>`). 틀리면 앱이 아이콘을 못 불러옴 |
 
 ### 2-2. 공유해도 되는 값
 

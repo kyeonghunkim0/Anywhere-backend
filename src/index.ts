@@ -1,3 +1,4 @@
+import path from "node:path";
 import express from "express";
 import cors from "cors";
 import swaggerUi from "swagger-ui-express";
@@ -44,6 +45,14 @@ app.get("/health", (_req, res) => {
     service: "Anywhere Server",
   });
 });
+
+// ============================================
+// 정적 파일 (뱃지 아이콘 등) - 프로젝트 루트의 assets/ 를 /static 으로 노출
+// ============================================
+app.use(
+  "/static",
+  express.static(path.resolve(process.cwd(), "assets"), { maxAge: "7d" })
+);
 
 // ============================================
 // Swagger API 문서

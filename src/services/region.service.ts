@@ -2,6 +2,7 @@ import { prisma } from "../utils/prisma.js";
 import { REGION_LEVELS, getNextRegionLevelTarget } from "../utils/gamification.js";
 import { NotFoundError } from "../utils/errors.js";
 import { formatRegionName } from "../utils/regionName.js";
+import { getRegionBadgeMap, RegionBadgeSummary } from "./badge.service.js";
 
 interface GrowthRegionItem {
   regionId: string;
@@ -14,18 +15,24 @@ interface GrowthRegionItem {
   target: number;
   remaining: number; // "N명만 더 오면 레벨업!"
   imageUrl: string | null; // 지역 대표 사진
+  badge: RegionBadgeSummary | null; // 기초자치단체 수집판 뱃지 (없으면 null)
 }
 
 /**
  * 홈/랭킹 화면 [레벨업 임박 로컬] 리스트
  * - 다음 레벨까지 방문이 가장 적게 남은 인구감소지역 순으로 정렬
+ * - 기초자치단체 뱃지(icon)가 등록된 지역만 내려준다.
  */
 export async function getGrowthRegions(limit: number = 10): Promise<GrowthRegionItem[]> {
   const regions = await prisma.region.findMany({
     where: { isDepopulated: true },
   });
 
+  // 뱃지가 등록된 지역만 대상으로 한다.
+  const badgeMap = await getRegionBadgeMap(regions.map((r) => r.id));
+
   const items = regions
+    .filter((region) => badgeMap.has(region.id))
     .map((region) => {
       const nextTarget = getNextRegionLevelTarget(region.visitCount);
       return { region, nextTarget };
@@ -35,21 +42,23 @@ export async function getGrowthRegions(limit: number = 10): Promise<GrowthRegion
     nextTarget: NonNullable<ReturnType<typeof getNextRegionLevelTarget>>;
   }[];
 
-  return items
+  const ranked = items
     .sort((a, b) => a.nextTarget.remaining - b.nextTarget.remaining)
-    .slice(0, limit)
-    .map(({ region, nextTarget }) => ({
-      regionId: region.id,
-      sidoName: region.sidoName,
-      sigunguName: region.sigunguName,
-      displayName: formatRegionName(region.sidoName, region.sigunguName),
-      isDepopulated: region.isDepopulated,
-      level: region.level,
-      current: nextTarget.current,
-      target: nextTarget.target,
-      remaining: nextTarget.remaining,
-      imageUrl: region.imageUrl,
-    }));
+    .slice(0, limit);
+
+  return ranked.map(({ region, nextTarget }) => ({
+    regionId: region.id,
+    sidoName: region.sidoName,
+    sigunguName: region.sigunguName,
+    displayName: formatRegionName(region.sidoName, region.sigunguName),
+    isDepopulated: region.isDepopulated,
+    level: region.level,
+    current: nextTarget.current,
+    target: nextTarget.target,
+    remaining: nextTarget.remaining,
+    imageUrl: region.imageUrl,
+    badge: badgeMap.get(region.id) ?? null,
+  }));
 }
 
 interface RegionLevelRow {
@@ -78,6 +87,7 @@ interface RegionDetailResult {
   quote: string | null;
   imageUrl: string | null; // 지역 대표 사진
   imageCredit: string | null; // 촬영자 (라이선스 표시용)
+  badge: RegionBadgeSummary | null; // 기초자치단체 수집판 뱃지 (없으면 null)
   stats: RegionStat[];
   levels: RegionLevelRow[];
 }
@@ -99,6 +109,8 @@ export async function getRegionDetail(regionId: string): Promise<RegionDetailRes
       select: { userId: true },
     }),
   ]);
+
+  const badgeMap = await getRegionBadgeMap([region.id]);
 
   const nextTarget = getNextRegionLevelTarget(region.visitCount);
   const target = nextTarget?.target ?? null;
@@ -122,6 +134,7 @@ export async function getRegionDetail(regionId: string): Promise<RegionDetailRes
     quote: region.quote,
     imageUrl: region.imageUrl,
     imageCredit: region.imageCredit,
+    badge: badgeMap.get(region.id) ?? null,
     stats: [
       { label: "누적 방문", value: visitorCount },
       { label: "방문자 수", value: uniqueVisitorCount.length },

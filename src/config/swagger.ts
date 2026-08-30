@@ -51,6 +51,7 @@ export const swaggerDocument: JsonObject = {
     { name: "Ranking", description: "랭킹" },
     { name: "Feed", description: "실시간 활동 피드" },
     { name: "Tags", description: "홈 화면 큐레이션 해시태그" },
+    { name: "Places", description: "장소 상세 (이름·주소·좌표·지역·태그·후기)" },
     { name: "Badges", description: "스페셜(시즌 한정) & 로컬 히든 뱃지" },
     { name: "Regions", description: "지역 로컬 성장 게이지" },
     { name: "Users", description: "유저 프로필 / 설정 / 랭커 상세" },
@@ -725,6 +726,22 @@ export const swaggerDocument: JsonObject = {
         ],
         responses: {
           "200": { description: "조회 성공" },
+        },
+      },
+    },
+    "/api/places/{placeId}": {
+      get: {
+        tags: ["Places"],
+        summary: "장소 상세",
+        description:
+          "placeId 단건으로 장소 상세를 조회합니다. 이름·주소·좌표(mapX/mapY)·지역(displayName)·태그·방문자 수와 최신 후기(reviews)를 한 번에 반환합니다.",
+        parameters: [
+          { name: "placeId", in: "path", required: true, schema: { type: "string" } },
+          { name: "reviewLimit", in: "query", required: false, schema: { type: "integer", default: 20 } },
+        ],
+        responses: {
+          "200": { description: "조회 성공" },
+          "404": { description: "존재하지 않는 관광지" },
         },
       },
     },

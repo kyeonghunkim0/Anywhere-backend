@@ -15,6 +15,7 @@ import regionRoutes from "./routes/region.routes.js";
 import userRoutes from "./routes/user.routes.js";
 import appRoutes from "./routes/app.routes.js";
 import reviewRoutes from "./routes/review.routes.js";
+import placeRoutes from "./routes/place.routes.js";
 import { notFoundHandler, errorHandler } from "./middlewares/error.middleware.js";
 import { startSyncPlacesJob } from "./jobs/syncPlaces.job.js";
 import { prisma } from "./utils/prisma.js";
@@ -64,6 +65,7 @@ app.use("/api/regions", regionRoutes);
 app.use("/api/users", userRoutes);
 app.use("/api/app", appRoutes);
 app.use("/api/reviews", reviewRoutes);
+app.use("/api/places", placeRoutes);
 
 // ============================================
 // 404 · 전역 에러 핸들러 (반드시 라우트 등록 이후)

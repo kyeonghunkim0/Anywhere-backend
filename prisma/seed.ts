@@ -29,6 +29,17 @@ interface RegionSeedData {
   isDepopulated: boolean;
   centerLat: number;
   centerLng: number;
+  /**
+   * 시·군 단위 여부. 생략하면 sigunguName으로 자동 판별한다.
+   * (특별·광역시 자치구는 "구"로 끝나므로 false — 수집판·매칭에서 제외된다.)
+   * 행정시 등 예외가 생기면 여기서 명시적으로 지정한다.
+   */
+  isCityCounty?: boolean;
+}
+
+/** "구"로 끝나면 자치구, 그 외("시"·"군")는 시·군 단위로 본다. */
+function resolveIsCityCounty(region: RegionSeedData): boolean {
+  return region.isCityCounty ?? !region.sigunguName.endsWith("구");
 }
 
 const regions: RegionSeedData[] = [
@@ -337,6 +348,7 @@ async function main() {
   let updated = 0;
 
   for (const region of regions) {
+    const isCityCounty = resolveIsCityCounty(region);
     const result = await prisma.region.upsert({
       where: {
         areaCode_sigunguCode: {
@@ -348,6 +360,7 @@ async function main() {
         sidoName: region.sidoName,
         sigunguName: region.sigunguName,
         isDepopulated: region.isDepopulated,
+        isCityCounty,
         centerLat: region.centerLat,
         centerLng: region.centerLng,
       },
@@ -357,6 +370,7 @@ async function main() {
         areaCode: region.areaCode,
         sigunguCode: region.sigunguCode,
         isDepopulated: region.isDepopulated,
+        isCityCounty,
         centerLat: region.centerLat,
         centerLng: region.centerLng,
       },
@@ -367,11 +381,13 @@ async function main() {
   }
 
   const depopulatedCount = regions.filter((r) => r.isDepopulated).length;
+  const cityCountyCount = regions.filter(resolveIsCityCounty).length;
   const sidoCount = new Set(regions.map((r) => r.sidoName)).size;
 
   console.log(`✅ 시딩 완료!`);
   console.log(`   📍 총 ${regions.length}개 기초자치단체`);
   console.log(`   🏛️  ${sidoCount}개 광역자치단체`);
+  console.log(`   🏙️  시·군 단위: ${cityCountyCount}개 (자치구 ${regions.length - cityCountyCount}개 제외)`);
   console.log(`   🔴 인구감소지역: ${depopulatedCount}개`);
   console.log(`   🟢 일반지역: ${regions.length - depopulatedCount}개`);
 }

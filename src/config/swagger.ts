@@ -505,7 +505,8 @@ export const swaggerDocument: JsonObject = {
       get: {
         tags: ["Passport"],
         summary: "여권 조회 (도장 수집 현황)",
-        description: "해당 사용자가 수집한 228개 지역 매핑 데이터를 반환합니다.",
+        description:
+          "해당 사용자가 수집한 시·군 단위 지역(특별·광역시 자치구 제외) 매핑 데이터를 반환합니다.",
         security: [{ BearerAuth: [] }],
         parameters: [
           {
@@ -531,7 +532,7 @@ export const swaggerDocument: JsonObject = {
                         userId: { type: "string" },
                         nickname: { type: "string" },
                         totalStamps: { type: "integer" },
-                        totalRegions: { type: "integer", example: 228 },
+                        totalRegions: { type: "integer", example: 160 },
                         visitedRegions: { type: "integer", example: 15 },
                         completionRate: { type: "number", example: 6.6 },
                         regions: {

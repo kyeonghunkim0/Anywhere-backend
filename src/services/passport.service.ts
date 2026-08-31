@@ -1,6 +1,7 @@
 import { prisma } from "../utils/prisma.js";
 import { NotFoundError } from "../utils/errors.js";
 import { formatRegionName } from "../utils/regionName.js";
+import { CITY_COUNTY_ONLY } from "../utils/regionFilter.js";
 import { getRegionBadgeMap, RegionBadgeSummary } from "./badge.service.js";
 
 interface PassportRegion {
@@ -40,8 +41,9 @@ export async function getPassport(userId: string): Promise<PassportResult> {
     throw new NotFoundError("존재하지 않는 사용자입니다.");
   }
 
-  // 전체 지역 목록
+  // 전체 지역 목록 (시·군 단위만 — 특별·광역시 자치구 제외)
   const allRegions = await prisma.region.findMany({
+    where: CITY_COUNTY_ONLY,
     orderBy: [{ sidoName: "asc" }, { sigunguName: "asc" }],
   });
 

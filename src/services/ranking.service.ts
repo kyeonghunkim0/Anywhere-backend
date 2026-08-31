@@ -1,6 +1,7 @@
 import { prisma } from "../utils/prisma.js";
 import { NotFoundError } from "../utils/errors.js";
 import { formatRegionName } from "../utils/regionName.js";
+import { CITY_COUNTY_ONLY } from "../utils/regionFilter.js";
 
 interface UserRankItem {
   rank: number;
@@ -62,6 +63,7 @@ export async function getPlaceRanking(): Promise<PlaceRankItem[]> {
     by: ["regionId"],
     where: {
       checkedInAt: { gte: oneWeekAgo },
+      region: CITY_COUNTY_ONLY,
     },
     _count: { id: true },
     orderBy: { _count: { id: "desc" } },

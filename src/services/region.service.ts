@@ -2,6 +2,7 @@ import { prisma } from "../utils/prisma.js";
 import { REGION_LEVELS, getNextRegionLevelTarget } from "../utils/gamification.js";
 import { NotFoundError } from "../utils/errors.js";
 import { formatRegionName } from "../utils/regionName.js";
+import { CITY_COUNTY_ONLY } from "../utils/regionFilter.js";
 import { getRegionBadgeMap, RegionBadgeSummary } from "./badge.service.js";
 
 interface GrowthRegionItem {
@@ -25,7 +26,7 @@ interface GrowthRegionItem {
  */
 export async function getGrowthRegions(limit: number = 10): Promise<GrowthRegionItem[]> {
   const regions = await prisma.region.findMany({
-    where: { isDepopulated: true },
+    where: { isDepopulated: true, ...CITY_COUNTY_ONLY },
   });
 
   // 뱃지가 등록된 지역만 대상으로 한다.

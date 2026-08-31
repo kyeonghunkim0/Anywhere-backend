@@ -237,6 +237,11 @@ const regionBadges = [
   { key: "jeonnam_yeongam", icon: "jeonnam-yeongam", sidoName: "전라남도", sigunguName: "영암군" },
   { key: "jeonnam_yeonggwang", icon: "jeonnam-yeonggwang", sidoName: "전라남도", sigunguName: "영광군" },
   { key: "jeonnam_yeosu", icon: "jeonnam-yeosu", sidoName: "전라남도", sigunguName: "여수시" },
+  // 광역시·특별자치시 소속 시·군
+  { key: "busan_gijang", icon: "busan-gijang", sidoName: "부산광역시", sigunguName: "기장군" },
+  { key: "daegu_dalseong", icon: "daegu-dalseong", sidoName: "대구광역시", sigunguName: "달성군" },
+  { key: "ulsan_ulju", icon: "ulsan-ulju", sidoName: "울산광역시", sigunguName: "울주군" },
+  { key: "sejong_sejong", icon: "sejong-sejong", sidoName: "세종특별자치시", sigunguName: "세종시" },
 ];
 
 /** 시·도명 → 수집판 표시용 짧은 이름 (예: "강원특별자치도" → "강원") */
@@ -251,6 +256,10 @@ const SHORT_SIDO: Record<string, string> = {
   전라남도: "전남",
   인천광역시: "인천",
   제주특별자치도: "제주",
+  부산광역시: "부산",
+  대구광역시: "대구",
+  울산광역시: "울산",
+  세종특별자치시: "세종",
 };
 
 async function main() {

@@ -2,6 +2,7 @@ import { prisma } from "../utils/prisma.js";
 import { formatRegionName } from "../utils/regionName.js";
 import { getUserLevel } from "../utils/gamification.js";
 import { getMyRanking } from "./ranking.service.js";
+import { CITY_COUNTY_ONLY } from "../utils/regionFilter.js";
 import { NotFoundError, ValidationError } from "../utils/errors.js";
 
 interface UserProfile {
@@ -76,11 +77,15 @@ export async function getMyProfileStats(userId: string): Promise<ProfileStatsRes
     reviewCount,
     myRanking,
   ] = await Promise.all([
-    prisma.region.count(),
-    prisma.userStamp.findMany({ where: { userId }, distinct: ["regionId"], select: { regionId: true } }),
+    prisma.region.count({ where: CITY_COUNTY_ONLY }),
+    prisma.userStamp.findMany({
+      where: { userId, region: CITY_COUNTY_ONLY },
+      distinct: ["regionId"],
+      select: { regionId: true },
+    }),
     prisma.userStamp
       .findMany({
-        where: { userId, region: { isDepopulated: true } },
+        where: { userId, region: { isDepopulated: true, ...CITY_COUNTY_ONLY } },
         distinct: ["regionId"],
         select: { regionId: true },
       })
@@ -261,7 +266,7 @@ async function getLast8WeeksActivity(userId: string): Promise<WeekActivity[]> {
 async function getTopRegions(userId: string, limit: number): Promise<RepresentativeStamp[]> {
   const grouped = await prisma.userStamp.groupBy({
     by: ["regionId"],
-    where: { userId },
+    where: { userId, region: CITY_COUNTY_ONLY },
     _count: { id: true },
     orderBy: { _count: { id: "desc" } },
     take: limit,

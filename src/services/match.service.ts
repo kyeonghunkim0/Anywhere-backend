@@ -2,6 +2,7 @@ import { prisma } from "../utils/prisma.js";
 import { haversineDistance } from "../utils/haversine.js";
 import { NotFoundError, RateLimitError, ValidationError } from "../utils/errors.js";
 import { formatRegionName } from "../utils/regionName.js";
+import { CITY_COUNTY_ONLY } from "../utils/regionFilter.js";
 
 const MAX_DAILY_MATCHES = 20;
 
@@ -57,8 +58,12 @@ export async function getRandomMatch(input: MatchInput): Promise<MatchResult | n
   }
 
   // 1. 전체 관광지를 region 정보와 함께 조회 (큐레이션 태그 선택 시 해당 태그로 필터링)
+  //    매칭 대상은 시·군 단위 지역만 — 특별·광역시 자치구는 제외한다.
   const allPlaces = await prisma.place.findMany({
-    where: tagId ? { tags: { some: { tagId } } } : undefined,
+    where: {
+      region: CITY_COUNTY_ONLY,
+      ...(tagId ? { tags: { some: { tagId } } } : {}),
+    },
     include: {
       region: true,
     },

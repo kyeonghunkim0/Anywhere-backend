@@ -52,6 +52,7 @@ export const swaggerDocument: JsonObject = {
     { name: "Feed", description: "실시간 활동 피드" },
     { name: "Tags", description: "홈 화면 큐레이션 해시태그" },
     { name: "Places", description: "장소 상세 (이름·주소·좌표·지역·태그·후기)" },
+    { name: "Search", description: "지역 + 관광지 통합 검색" },
     { name: "Badges", description: "스페셜(시즌 한정) & 로컬 히든 뱃지" },
     { name: "Regions", description: "지역 로컬 성장 게이지" },
     { name: "Users", description: "유저 프로필 / 설정 / 랭커 상세" },
@@ -505,7 +506,8 @@ export const swaggerDocument: JsonObject = {
       get: {
         tags: ["Passport"],
         summary: "여권 조회 (도장 수집 현황)",
-        description: "해당 사용자가 수집한 228개 지역 매핑 데이터를 반환합니다.",
+        description:
+          "해당 사용자가 수집한 시·군 단위 지역(특별·광역시 자치구 제외) 매핑 데이터를 반환합니다.",
         security: [{ BearerAuth: [] }],
         parameters: [
           {
@@ -531,7 +533,7 @@ export const swaggerDocument: JsonObject = {
                         userId: { type: "string" },
                         nickname: { type: "string" },
                         totalStamps: { type: "integer" },
-                        totalRegions: { type: "integer", example: 228 },
+                        totalRegions: { type: "integer", example: 160 },
                         visitedRegions: { type: "integer", example: 15 },
                         completionRate: { type: "number", example: 6.6 },
                         regions: {
@@ -952,6 +954,108 @@ export const swaggerDocument: JsonObject = {
               },
             },
           },
+        },
+      },
+    },
+    "/api/search": {
+      get: {
+        tags: ["Search"],
+        summary: "통합 검색 (지역 + 관광지)",
+        description:
+          "키워드로 지역 이름과 관광지 이름·주소를 함께 검색합니다. " +
+          "특별·광역시 자치구는 결과에서 제외되며(시·군 단위만), " +
+          "관광지는 이름 일치 우선(정확 → 접두 → 포함 → 주소) 정렬 후 limit/offset으로 페이징합니다. (인증 불필요)",
+        parameters: [
+          {
+            name: "q",
+            in: "query",
+            required: true,
+            schema: { type: "string" },
+            description: "검색어 (예: 포항, 해수욕장, 강릉 카페)",
+          },
+          {
+            name: "limit",
+            in: "query",
+            required: false,
+            schema: { type: "integer", default: 20, minimum: 1, maximum: 50 },
+            description: "관광지 결과 개수 (1~50)",
+          },
+          {
+            name: "offset",
+            in: "query",
+            required: false,
+            schema: { type: "integer", default: 0, minimum: 0 },
+            description: "관광지 결과 시작 위치",
+          },
+        ],
+        responses: {
+          "200": {
+            description: "검색 성공",
+            content: {
+              "application/json": {
+                schema: {
+                  type: "object",
+                  properties: {
+                    success: { type: "boolean", example: true },
+                    data: {
+                      type: "object",
+                      properties: {
+                        query: { type: "string", example: "포항" },
+                        regions: {
+                          type: "array",
+                          items: {
+                            type: "object",
+                            properties: {
+                              regionId: { type: "string" },
+                              sidoName: { type: "string", example: "경상북도" },
+                              sigunguName: { type: "string", example: "포항시" },
+                              displayName: { type: "string", example: "경북 포항시" },
+                              isDepopulated: { type: "boolean" },
+                              imageUrl: { type: "string", nullable: true },
+                            },
+                          },
+                        },
+                        places: {
+                          type: "object",
+                          properties: {
+                            total: { type: "integer", example: 42 },
+                            limit: { type: "integer", example: 20 },
+                            offset: { type: "integer", example: 0 },
+                            items: {
+                              type: "array",
+                              items: {
+                                type: "object",
+                                properties: {
+                                  id: { type: "string" },
+                                  name: { type: "string" },
+                                  address: { type: "string" },
+                                  thumbnail: { type: "string", nullable: true },
+                                  mapX: { type: "number" },
+                                  mapY: { type: "number" },
+                                  stampCount: { type: "integer" },
+                                  region: {
+                                    type: "object",
+                                    properties: {
+                                      id: { type: "string" },
+                                      sidoName: { type: "string" },
+                                      sigunguName: { type: "string" },
+                                      displayName: { type: "string" },
+                                      isDepopulated: { type: "boolean" },
+                                    },
+                                  },
+                                },
+                              },
+                            },
+                          },
+                        },
+                      },
+                    },
+                  },
+                },
+              },
+            },
+          },
+          "400": { description: "검색어 누락 또는 잘못된 limit/offset" },
         },
       },
     },

@@ -45,6 +45,7 @@ model Region {
   areaCode      String  // TourAPI 시·도 코드
   sigunguCode   String  // TourAPI 시·군·구 코드
   isDepopulated Boolean @default(false) // 인구감소지역 여부
+  isCityCounty  Boolean @default(true)  // 시·군 단위 여부 (특별·광역시 자치구는 false — 수집판·매칭에서 제외)
   centerLat     Float   // 중심 위도
   centerLng     Float   // 중심 경도
 
@@ -62,6 +63,7 @@ model Region {
   stamps UserStamp[]
   badges Badge[]
 
+  @@index([isCityCounty])
   @@unique([areaCode, sigunguCode])
   @@map("regions")
 }

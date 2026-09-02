@@ -964,7 +964,9 @@ export const swaggerDocument: JsonObject = {
         description:
           "키워드로 지역 이름과 관광지 이름·주소를 함께 검색합니다. " +
           "특별·광역시 자치구는 결과에서 제외되며(시·군 단위만), " +
-          "관광지는 이름 일치 우선(정확 → 접두 → 포함 → 주소) 정렬 후 limit/offset으로 페이징합니다. (인증 불필요)",
+          "관광지는 이름 일치 우선(정확 → 접두 → 포함 → 주소) 정렬 후 limit/offset으로 페이징합니다. " +
+          "지역은 regionLimit/regionOffset으로 따로 페이징합니다. " +
+          "regionGroup으로 권역(수도권·충청·전라·경상·강원·제주)을 지정하면 지역·관광지 결과에 함께 적용됩니다. (인증 불필요)",
         parameters: [
           {
             name: "q",
@@ -987,6 +989,30 @@ export const swaggerDocument: JsonObject = {
             schema: { type: "integer", default: 0, minimum: 0 },
             description: "관광지 결과 시작 위치",
           },
+          {
+            name: "regionLimit",
+            in: "query",
+            required: false,
+            schema: { type: "integer", default: 20, minimum: 1, maximum: 50 },
+            description: "지역 결과 개수 (1~50)",
+          },
+          {
+            name: "regionOffset",
+            in: "query",
+            required: false,
+            schema: { type: "integer", default: 0, minimum: 0 },
+            description: "지역 결과 시작 위치",
+          },
+          {
+            name: "regionGroup",
+            in: "query",
+            required: false,
+            schema: {
+              type: "string",
+              enum: ["수도권", "충청", "전라", "경상", "강원", "제주"],
+            },
+            description: "권역 칩 필터. 생략 또는 '전지역'이면 전체. 지역·관광지 결과에 함께 적용",
+          },
         ],
         responses: {
           "200": {
@@ -1002,16 +1028,24 @@ export const swaggerDocument: JsonObject = {
                       properties: {
                         query: { type: "string", example: "포항" },
                         regions: {
-                          type: "array",
-                          items: {
-                            type: "object",
-                            properties: {
-                              regionId: { type: "string" },
-                              sidoName: { type: "string", example: "경상북도" },
-                              sigunguName: { type: "string", example: "포항시" },
-                              displayName: { type: "string", example: "경북 포항시" },
-                              isDepopulated: { type: "boolean" },
-                              imageUrl: { type: "string", nullable: true },
+                          type: "object",
+                          properties: {
+                            total: { type: "integer", example: 3 },
+                            limit: { type: "integer", example: 20 },
+                            offset: { type: "integer", example: 0 },
+                            items: {
+                              type: "array",
+                              items: {
+                                type: "object",
+                                properties: {
+                                  regionId: { type: "string" },
+                                  sidoName: { type: "string", example: "경상북도" },
+                                  sigunguName: { type: "string", example: "포항시" },
+                                  displayName: { type: "string", example: "경북 포항시" },
+                                  isDepopulated: { type: "boolean" },
+                                  imageUrl: { type: "string", nullable: true },
+                                },
+                              },
                             },
                           },
                         },

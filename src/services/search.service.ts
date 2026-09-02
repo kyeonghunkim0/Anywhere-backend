@@ -1,14 +1,14 @@
+import type { Prisma } from "../generated/prisma/client.js";
 import { prisma } from "../utils/prisma.js";
 import { ValidationError } from "../utils/errors.js";
 import { formatRegionName } from "../utils/regionName.js";
 import { CITY_COUNTY_ONLY } from "../utils/regionFilter.js";
+import { regionGroupWhere } from "../utils/regionGroup.js";
 
 // ============================================
 // 통합 검색 (관광지 이름·주소 / 지역 이름)
 // ============================================
 
-/** 지역 검색 결과 최대 개수 */
-const REGION_LIMIT = 20;
 /** 이름 일치 우선 정렬을 위해 메모리로 끌어올 관광지 후보 상한 */
 const PLACE_CANDIDATE_CAP = 500;
 
@@ -40,15 +40,17 @@ interface SearchPlaceItem {
   region: SearchPlaceRegion;
 }
 
+interface SearchPage<T> {
+  total: number;
+  limit: number;
+  offset: number;
+  items: T[];
+}
+
 interface SearchResult {
   query: string;
-  regions: SearchRegionItem[];
-  places: {
-    total: number;
-    limit: number;
-    offset: number;
-    items: SearchPlaceItem[];
-  };
+  regions: SearchPage<SearchRegionItem>;
+  places: SearchPage<SearchPlaceItem>;
 }
 
 /**
@@ -61,38 +63,37 @@ interface SearchResult {
 export async function search(
   rawQuery: string,
   limit: number = 20,
-  offset: number = 0
+  offset: number = 0,
+  regionLimit: number = 20,
+  regionOffset: number = 0,
+  regionGroup?: string
 ): Promise<SearchResult> {
   const query = rawQuery.trim();
   if (query.length < 1) {
     throw new ValidationError("검색어(q)를 입력해주세요.");
   }
 
+  // 권역 칩("충청" 등) 필터. 지역·관광지 양쪽에 동일하게 적용한다.
+  const groupWhere = regionGroupWhere(regionGroup);
+  const placeWhere: Prisma.PlaceWhereInput = {
+    region: { ...CITY_COUNTY_ONLY, ...groupWhere },
+    OR: [
+      { name: { contains: query, mode: "insensitive" } },
+      { address: { contains: query, mode: "insensitive" } },
+    ],
+  };
+
   const [regions, placeCandidates, placeTotal] = await Promise.all([
-    searchRegions(query),
+    searchRegions(query, regionLimit, regionOffset, groupWhere),
     prisma.place.findMany({
-      where: {
-        region: CITY_COUNTY_ONLY,
-        OR: [
-          { name: { contains: query, mode: "insensitive" } },
-          { address: { contains: query, mode: "insensitive" } },
-        ],
-      },
+      where: placeWhere,
       include: {
         region: true,
         _count: { select: { stamps: true } },
       },
       take: PLACE_CANDIDATE_CAP,
     }),
-    prisma.place.count({
-      where: {
-        region: CITY_COUNTY_ONLY,
-        OR: [
-          { name: { contains: query, mode: "insensitive" } },
-          { address: { contains: query, mode: "insensitive" } },
-        ],
-      },
-    }),
+    prisma.place.count({ where: placeWhere }),
   ]);
 
   const lowered = query.toLowerCase();
@@ -126,27 +127,43 @@ export async function search(
   };
 }
 
+/** 시·군 단위 지역만: 검색 조건(where) 조립 (권역 필터를 AND로 합친다) */
+function regionWhere(query: string, groupWhere: Prisma.RegionWhereInput): Prisma.RegionWhereInput {
+  const tokens = Array.from(new Set(query.split(/\s+/).filter(Boolean)));
+  return {
+    ...CITY_COUNTY_ONLY,
+    ...groupWhere,
+    OR: tokens.flatMap((token) => [
+      { sidoName: { contains: token, mode: "insensitive" as const } },
+      { sigunguName: { contains: token, mode: "insensitive" as const } },
+    ]),
+  };
+}
+
 /**
  * 지역 이름 검색. sidoName·sigunguName에 키워드가 들어가면 매칭.
- * (displayName은 파생값이라 DB에 없으므로, "부산 중구"처럼 축약 표기로 검색한 경우를
- *  대비해 시·도 축약 접두사를 제거한 나머지로 한 번 더 훑는다.)
+ * (공백으로 토큰을 나눠 "강릉 카페"처럼 시·도 + 시·군 조합 검색도 받는다.)
+ * 시·도 → 시·군 순으로 정렬한 뒤 offset/limit으로 페이징한다.
  */
-async function searchRegions(query: string): Promise<SearchRegionItem[]> {
-  const tokens = Array.from(new Set(query.split(/\s+/).filter(Boolean)));
+async function searchRegions(
+  query: string,
+  limit: number,
+  offset: number,
+  groupWhere: Prisma.RegionWhereInput
+): Promise<SearchPage<SearchRegionItem>> {
+  const where = regionWhere(query, groupWhere);
 
-  const regions = await prisma.region.findMany({
-    where: {
-      ...CITY_COUNTY_ONLY,
-      OR: tokens.flatMap((token) => [
-        { sidoName: { contains: token, mode: "insensitive" as const } },
-        { sigunguName: { contains: token, mode: "insensitive" as const } },
-      ]),
-    },
-    orderBy: [{ sidoName: "asc" }, { sigunguName: "asc" }],
-    take: REGION_LIMIT,
-  });
+  const [total, regions] = await Promise.all([
+    prisma.region.count({ where }),
+    prisma.region.findMany({
+      where,
+      orderBy: [{ sidoName: "asc" }, { sigunguName: "asc" }],
+      skip: offset,
+      take: limit,
+    }),
+  ]);
 
-  return regions.map((region) => ({
+  const items = regions.map((region) => ({
     regionId: region.id,
     sidoName: region.sidoName,
     sigunguName: region.sigunguName,
@@ -154,6 +171,8 @@ async function searchRegions(query: string): Promise<SearchRegionItem[]> {
     isDepopulated: region.isDepopulated,
     imageUrl: region.imageUrl,
   }));
+
+  return { total, limit, offset, items };
 }
 
 /** 낮을수록 우선: 0 정확히 일치, 1 접두 일치, 2 이름 포함, 3 주소에만 포함 */

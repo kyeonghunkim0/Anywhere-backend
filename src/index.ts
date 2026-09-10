@@ -23,6 +23,12 @@ import { localeMiddleware } from "./middlewares/locale.middleware.js";
 import { startSyncPlacesJob } from "./jobs/syncPlaces.job.js";
 import { prisma } from "./utils/prisma.js";
 
+// 프로세스 타임존을 한국(KST)으로 고정합니다.
+// setHours(0,0,0,0) 같은 "오늘/이번 주" 경계 계산이 서버 OS(UTC) 기준으로 돌면
+// 하루 1회 체크인·일일 매칭 제한이 09:00 KST에 리셋되는 문제가 생깁니다.
+// toISOString()은 항상 UTC라 API 응답 포맷(...Z)에는 영향이 없습니다.
+process.env.TZ = process.env.TZ || "Asia/Seoul";
+
 // 환경변수 검증
 validateEnv();
 

@@ -6,6 +6,11 @@ dist/
 
 # Environment variables
 .env
+.env.production
+
+# 인증서 (OCI DB CA 등)
+certs/*
+!certs/.gitkeep
 
 # Prisma
 prisma/*.db

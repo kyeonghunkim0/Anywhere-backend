@@ -4,25 +4,33 @@
 generator client {
   provider = "prisma-client"
   output   = "../src/generated/prisma"
+  // package.json이 commonjs이므로 CJS로 생성해야 합니다.
+  // 기본값(ESM)으로 두면 빌드는 통과해도 `npm start`가 SyntaxError로 죽습니다.
+  moduleFormat = "cjs"
 }
 
 datasource db {
-  provider = "sqlite"
+  provider = "postgresql"
 }
 
 // ============================================
 // 사용자 (Users Table)
 // ============================================
 model User {
-  id          String   @id @default(cuid())
-  nickname    String
-  socialType  String   // "apple" | "kakao"
-  socialId    String   @unique // 소셜 로그인 고유 ID
-  totalStamps Int      @default(0)
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
+  id           String   @id @default(cuid())
+  nickname     String
+  socialType   String   // "apple" | "google"
+  socialId     String   @unique // 소셜 로그인 고유 ID
+  totalStamps  Int      @default(0)
+  profileImage String?
+  pushEnabled  Boolean  @default(true)
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
 
-  stamps UserStamp[]
+  stamps        UserStamp[]
+  matchHistory  MatchHistory[]
+  badges        UserBadge[]
+  reviews       Review[]
 
   @@map("users")
 }
@@ -37,12 +45,25 @@ model Region {
   areaCode      String  // TourAPI 시·도 코드
   sigunguCode   String  // TourAPI 시·군·구 코드
   isDepopulated Boolean @default(false) // 인구감소지역 여부
+  isCityCounty  Boolean @default(true)  // 시·군 단위 여부 (특별·광역시 자치구는 false — 수집판·매칭에서 제외)
   centerLat     Float   // 중심 위도
   centerLng     Float   // 중심 경도
 
+  level         Int     @default(1) // 로컬 성장 게이지 - 누적 방문으로 상승하는 지역 레벨
+  visitCount    Int     @default(0) // 누적 방문(체크인) 횟수 - 레벨 계산용 카운터
+  quote         String? // 주민 한마디 (여권 지역 상세용 플레이버 텍스트)
+
+  // 지역 대표 사진 (한국관광공사 관광사진갤러리 기반, seedRegionPhotos 스크립트가 채움)
+  imageUrl       String?   // 대표 사진 URL (https)
+  imageCredit    String?   // 촬영자 - 공공데이터 라이선스 표시 의무
+  imageSource    String?   // "gallery"(관광사진갤러리) | "place"(관광지 썸네일 폴백)
+  imageUpdatedAt DateTime? // 마지막 사진 갱신 시각
+
   places Place[]
   stamps UserStamp[]
+  badges Badge[]
 
+  @@index([isCityCounty])
   @@unique([areaCode, sigunguCode])
   @@map("regions")
 }
@@ -62,7 +83,11 @@ model Place {
   regionId String
   region   Region @relation(fields: [regionId], references: [id])
 
-  stamps UserStamp[]
+  stamps      UserStamp[]
+  matchHistory MatchHistory[]
+  tags         PlaceTag[]
+  badges       Badge[]
+  reviews      Review[]
 
   @@index([regionId])
   @@map("places")
@@ -72,8 +97,10 @@ model Place {
 // 방문 기록 (User_Stamps Table)
 // ============================================
 model UserStamp {
-  id          String   @id @default(cuid())
-  checkedInAt DateTime @default(now())
+  id            String   @id @default(cuid())
+  checkedInAt   DateTime @default(now())
+  visitorNumber Int      // 해당 지역(region)의 N번째 방문자 각인 (체크인 시점 지역 누적 방문 순번)
+  distanceKm    Float?   // 확정된 여정을 통해 체크인한 경우, 매칭 시점의 이동 거리 (프로필 누적 이동 거리 집계용)
 
   userId String
   user   User   @relation(fields: [userId], references: [id])
@@ -84,9 +111,134 @@ model UserStamp {
   regionId String
   region   Region @relation(fields: [regionId], references: [id])
 
+  matchHistoryId String?       @unique // 이 도장이 어느 확정 매칭을 통해 발급됐는지 (누적 이동 거리 집계용)
+  matchHistory   MatchHistory? @relation(fields: [matchHistoryId], references: [id])
+
   @@index([userId])
   @@index([placeId])
   @@index([regionId])
   @@index([checkedInAt])
   @@map("user_stamps")
 }
+
+// ============================================
+// 매칭 이력 (MatchHistory Table) - 일 3회 제한 추적 + 진행 중인 여정 상태
+// ============================================
+model MatchHistory {
+  id          String    @id @default(cuid())
+  matchedAt   DateTime  @default(now())
+  distanceKm  Float     // 매칭 시점 사용자 위치 - 목적지 간 직선 거리
+  confirmedAt DateTime? // "여기로 결정" 누른 시각. null이면 아직 후보 상태
+  cancelledAt DateTime? // "여정 취소하기" 누른 시각
+
+  userId String
+  user   User   @relation(fields: [userId], references: [id])
+
+  placeId String
+  place   Place  @relation(fields: [placeId], references: [id])
+
+  stamp UserStamp?
+
+  @@index([userId, matchedAt])
+  @@index([userId, confirmedAt])
+  @@map("match_histories")
+}
+
+// ============================================
+// 로컬 후기 (Reviews Table)
+// ============================================
+model Review {
+  id        String   @id @default(cuid())
+  content   String
+  createdAt DateTime @default(now())
+
+  userId String
+  user   User   @relation(fields: [userId], references: [id])
+
+  placeId String
+  place   Place  @relation(fields: [placeId], references: [id])
+
+  @@index([userId])
+  @@index([placeId])
+  @@map("reviews")
+}
+
+// ============================================
+// 큐레이션 해시태그 (Tags Table) - 홈 화면 감성 태그 칩
+// ============================================
+model Tag {
+  id    String  @id @default(cuid())
+  label String  @unique // 예: "#밤하늘_별맛집"
+  emoji String?
+
+  places PlaceTag[]
+
+  @@map("tags")
+}
+
+// ============================================
+// 관광지 - 태그 매핑 (Place_Tags Table)
+// ============================================
+model PlaceTag {
+  placeId String
+  place   Place  @relation(fields: [placeId], references: [id])
+
+  tagId String
+  tag   Tag    @relation(fields: [tagId], references: [id])
+
+  @@id([placeId, tagId])
+  @@index([tagId])
+  @@map("place_tags")
+}
+
+// ============================================
+// 뱃지 마스터 (Badges Table) - 시즌 한정 & 로컬 히든 퀘스트
+// ============================================
+model Badge {
+  id          String    @id @default(cuid())
+  key         String    @unique // 코드성 식별자 (예: "jinhae_2026_spring")
+  name        String    // 예: "진해 군항제 한정 벚꽃 뱃지"
+  description String
+  icon        String
+
+  type String // "SEASONAL"(시즌 한정) | "HIDDEN"(로컬 히든 마이크로 스팟) | "REGION"(지역 레벨업 보상)
+
+  startAt DateTime? // 시즌 한정 뱃지 활성화 시작일
+  endAt   DateTime? // 시즌 한정 뱃지 마감일 (D-day 계산 기준)
+
+  lat     Float? // 히든 퀘스트 마이크로 스팟 위도
+  lng     Float? // 히든 퀘스트 마이크로 스팟 경도
+  radiusM Int?   // 히든 퀘스트 인증 반경 (미터, 기본 10~20m)
+
+  placeId String?
+  place   Place?  @relation(fields: [placeId], references: [id])
+
+  regionId String?
+  region   Region? @relation(fields: [regionId], references: [id])
+
+  createdAt DateTime @default(now())
+
+  userBadges UserBadge[]
+
+  @@index([type])
+  @@map("badges")
+}
+
+// ============================================
+// 유저 획득 뱃지 (User_Badges Table)
+// ============================================
+model UserBadge {
+  id       String   @id @default(cuid())
+  earnedAt DateTime @default(now())
+
+  userId String
+  user   User   @relation(fields: [userId], references: [id])
+
+  badgeId String
+  badge   Badge   @relation(fields: [badgeId], references: [id])
+
+  @@unique([userId, badgeId])
+  @@index([userId])
+  @@map("user_badges")
+}
+

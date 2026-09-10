@@ -1,0 +1,26 @@
+# OCI Compute(Ubuntu) systemd 유닛
+# 설치: sudo cp deploy/oracle-cloud/anywhere.service /etc/systemd/system/
+#      sudo systemctl daemon-reload && sudo systemctl enable --now anywhere
+[Unit]
+Description=Anywhere API Server
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=simple
+User=ubuntu
+WorkingDirectory=/home/ubuntu/Anywhere_server
+EnvironmentFile=/home/ubuntu/Anywhere_server/.env
+Environment=NODE_ENV=production
+ExecStart=/usr/bin/node dist/index.js
+Restart=always
+RestartSec=5
+# 그레이스풀 종료: SIGTERM 후 15초까지 대기
+KillSignal=SIGTERM
+TimeoutStopSec=15
+StandardOutput=journal
+StandardError=journal
+SyslogIdentifier=anywhere
+
+[Install]
+WantedBy=multi-user.target

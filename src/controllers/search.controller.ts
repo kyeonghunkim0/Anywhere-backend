@@ -1,20 +1,21 @@
 import { Request, Response } from "express";
 import { search } from "../services/search.service.js";
-import { respondWithError } from "../middlewares/error.middleware.js";
+import { respondWithError, respondFail } from "../middlewares/error.middleware.js";
 import { REGION_GROUP_NAMES, isRegionGroup } from "../utils/regionGroup.js";
+import type { MessageParams } from "../i18n/index.js";
 
-/** 쿼리 파라미터를 정수로 파싱하고 범위를 검증한다. 실패 시 에러 메시지를 반환. */
+/** 쿼리 파라미터를 정수로 파싱하고 범위를 검증한다. 실패 시 번역용 파라미터를 반환. */
 function parsePaging(
   value: unknown,
   fallback: number,
   min: number,
   max: number,
   label: string
-): { value: number } | { error: string } {
+): { value: number } | { error: MessageParams } {
   if (value === undefined) return { value: fallback };
   const n = parseInt(value as string, 10);
   if (isNaN(n) || n < min || n > max) {
-    return { error: `${label}은 ${min}~${max} 사이의 숫자여야 합니다.` };
+    return { error: { label, min, max } };
   }
   return { value: n };
 }
@@ -37,7 +38,7 @@ export async function searchController(req: Request, res: Response): Promise<voi
 
     for (const p of [limit, offset, regionLimit, regionOffset]) {
       if ("error" in p) {
-        res.status(400).json({ success: false, message: p.error });
+        respondFail(res, 400, "validation.pagingRange", p.error);
         return;
       }
     }
@@ -46,9 +47,8 @@ export async function searchController(req: Request, res: Response): Promise<voi
     const rawGroup = (req.query.regionGroup as string | undefined)?.trim();
     const regionGroup = rawGroup && rawGroup !== "전지역" ? rawGroup : undefined;
     if (regionGroup && !isRegionGroup(regionGroup)) {
-      res.status(400).json({
-        success: false,
-        message: `regionGroup은 다음 중 하나여야 합니다: ${REGION_GROUP_NAMES.join(", ")}`,
+      respondFail(res, 400, "search.regionGroupInvalid", {
+        options: REGION_GROUP_NAMES.join(", "),
       });
       return;
     }

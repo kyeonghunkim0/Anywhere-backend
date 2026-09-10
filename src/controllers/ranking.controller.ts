@@ -1,7 +1,7 @@
 import { Request, Response } from "express";
 import { AuthRequest } from "../middlewares/auth.middleware.js";
 import { getUserRanking, getPlaceRanking, getMyRanking } from "../services/ranking.service.js";
-import { respondWithError } from "../middlewares/error.middleware.js";
+import { respondWithError, respondFail } from "../middlewares/error.middleware.js";
 
 /**
  * GET /api/ranking/users
@@ -37,7 +37,7 @@ export async function getMyRankingController(req: AuthRequest, res: Response): P
   try {
     const userId = req.user?.userId;
     if (!userId) {
-      res.status(401).json({ success: false, message: "인증 정보가 없습니다." });
+      respondFail(res, 401, "auth.credentialsMissing");
       return;
     }
 

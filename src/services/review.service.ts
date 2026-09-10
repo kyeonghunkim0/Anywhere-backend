@@ -25,15 +25,15 @@ export async function createReview(input: CreateReviewInput): Promise<ReviewResu
 
   const trimmed = content.trim();
   if (!trimmed) {
-    throw new ValidationError("후기 내용을 입력해주세요.");
+    throw new ValidationError("review.contentRequired");
   }
   if (trimmed.length > MAX_CONTENT_LENGTH) {
-    throw new ValidationError(`후기는 ${MAX_CONTENT_LENGTH}자 이내로 작성해주세요.`);
+    throw new ValidationError("review.contentTooLong", { max: MAX_CONTENT_LENGTH });
   }
 
   const place = await prisma.place.findUnique({ where: { id: placeId } });
   if (!place) {
-    throw new NotFoundError("존재하지 않는 관광지입니다.");
+    throw new NotFoundError("place.notFound");
   }
 
   const review = await prisma.review.create({

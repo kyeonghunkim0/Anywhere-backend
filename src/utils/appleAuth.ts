@@ -38,7 +38,7 @@ export async function verifyAppleIdToken(idToken: string): Promise<AppleIdTokenP
   const decodedHeader = jwt.decode(idToken, { complete: true });
   const kid = decodedHeader?.header?.kid;
   if (!kid || typeof decodedHeader === "string") {
-    throw new UnauthorizedError("유효하지 않은 Apple idToken입니다.");
+    throw new UnauthorizedError("auth.appleTokenInvalid");
   }
 
   const publicKey = await getSigningKey(kid);
@@ -50,7 +50,7 @@ export async function verifyAppleIdToken(idToken: string): Promise<AppleIdTokenP
   });
 
   if (typeof payload === "string" || !payload.sub) {
-    throw new UnauthorizedError("유효하지 않은 Apple idToken입니다.");
+    throw new UnauthorizedError("auth.appleTokenInvalid");
   }
 
   return {

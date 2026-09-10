@@ -1,6 +1,6 @@
 import { Request, Response } from "express";
 import { loginWithSocial } from "../services/auth.service.js";
-import { respondWithError } from "../middlewares/error.middleware.js";
+import { respondWithError, respondFail, localize } from "../middlewares/error.middleware.js";
 
 /**
  * POST /api/auth/login
@@ -17,26 +17,17 @@ export async function loginController(req: Request, res: Response): Promise<void
     const { socialType, idToken, nickname } = req.body;
 
     if (!socialType) {
-      res.status(400).json({
-        success: false,
-        message: "socialType은 필수입니다.",
-      });
+      respondFail(res, 400, "auth.socialTypeRequired");
       return;
     }
 
     if (!["apple", "google"].includes(socialType)) {
-      res.status(400).json({
-        success: false,
-        message: "socialType은 'apple' 또는 'google'만 가능합니다.",
-      });
+      respondFail(res, 400, "auth.socialTypeInvalid");
       return;
     }
 
     if (!idToken) {
-      res.status(400).json({
-        success: false,
-        message: "idToken은 필수입니다.",
-      });
+      respondFail(res, 400, "auth.idTokenRequired");
       return;
     }
 
@@ -44,7 +35,7 @@ export async function loginController(req: Request, res: Response): Promise<void
 
     res.status(result.isNewUser ? 201 : 200).json({
       success: true,
-      message: result.isNewUser ? "회원가입 완료" : "로그인 성공",
+      message: localize(res, result.isNewUser ? "auth.signupComplete" : "auth.loginSuccess"),
       data: {
         token: result.token,
         user: result.user,

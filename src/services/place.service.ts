@@ -57,7 +57,7 @@ export async function getPlaceDetail(placeId: string, reviewLimit: number = 20):
   });
 
   if (!place) {
-    throw new NotFoundError("존재하지 않는 관광지입니다.");
+    throw new NotFoundError("place.notFound");
   }
 
   const reviews = await getReviewsByPlace(placeId, reviewLimit);

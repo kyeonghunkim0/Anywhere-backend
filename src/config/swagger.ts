@@ -10,7 +10,9 @@ export const swaggerDocument: JsonObject = {
       "소셜 로그인 후 발급받은 JWT 토큰을 `Authorization: Bearer <token>` 헤더에 포함하여 요청합니다.\n\n" +
       "### 공통 에러 규약\n" +
       "성공·실패 모두 `{ success, ... }` 형태의 JSON으로 응답합니다. 실패 응답의 본문은 항상 " +
-      "`{ \"success\": false, \"message\": \"...\" }` 입니다.\n\n" +
+      "`{ \"success\": false, \"code\": \"...\", \"message\": \"...\" }` 입니다. `code`는 기계용 메시지 키, " +
+      "`message`는 요청 `Accept-Language` 헤더에 맞춰 번역된 문구입니다.\n\n" +
+      "지원 로케일: `ko`(기본) · `en` · `ja` · `zh`. 헤더가 없거나 미지원이면 한국어로 응답합니다.\n\n" +
       "| 상태 | 의미 |\n" +
       "| --- | --- |\n" +
       "| 400 | 필수 파라미터 누락 · 잘못된 입력 · 본문 JSON 파싱 실패 |\n" +
@@ -18,7 +20,7 @@ export const swaggerDocument: JsonObject = {
       "| 404 | 리소스 없음 · 존재하지 않는 경로 |\n" +
       "| 409 | 중복 데이터 (unique 제약 위반) |\n" +
       "| 429 | 요청 횟수 제한 초과 (매칭 일 20회) |\n" +
-      "| 500 | 그 외 서버 오류. `message`는 항상 `\"서버 오류가 발생했습니다.\"` |\n\n" +
+      "| 500 | 그 외 서버 오류. `code`는 항상 `common.serverError` |\n\n" +
       "등록되지 않은 경로로 요청하면 HTML이 아닌 위 형식의 404 JSON이 반환됩니다. " +
       "각 엔드포인트에 개별 명시되지 않은 400/500 응답도 동일한 규약을 따릅니다.\n\n" +
       "### 주요 기능\n" +
@@ -74,7 +76,7 @@ export const swaggerDocument: JsonObject = {
         content: {
           "application/json": {
             schema: { $ref: "#/components/schemas/Error" },
-            example: { success: false, message: "userId는 필수입니다." },
+            example: { success: false, code: "validation.userIdRequired", message: "userId는 필수입니다." },
           },
         },
       },
@@ -83,7 +85,7 @@ export const swaggerDocument: JsonObject = {
         content: {
           "application/json": {
             schema: { $ref: "#/components/schemas/Error" },
-            example: { success: false, message: "유효하지 않은 토큰입니다." },
+            example: { success: false, code: "auth.tokenInvalid", message: "유효하지 않은 토큰입니다." },
           },
         },
       },
@@ -92,7 +94,7 @@ export const swaggerDocument: JsonObject = {
         content: {
           "application/json": {
             schema: { $ref: "#/components/schemas/Error" },
-            example: { success: false, message: "존재하지 않는 지역입니다." },
+            example: { success: false, code: "region.notFound", message: "존재하지 않는 지역입니다." },
           },
         },
       },
@@ -101,7 +103,7 @@ export const swaggerDocument: JsonObject = {
         content: {
           "application/json": {
             schema: { $ref: "#/components/schemas/Error" },
-            example: { success: false, message: "이미 존재하는 데이터입니다." },
+            example: { success: false, code: "common.duplicate", message: "이미 존재하는 데이터입니다." },
           },
         },
       },
@@ -110,7 +112,7 @@ export const swaggerDocument: JsonObject = {
         content: {
           "application/json": {
             schema: { $ref: "#/components/schemas/Error" },
-            example: { success: false, message: "서버 오류가 발생했습니다." },
+            example: { success: false, code: "common.serverError", message: "서버 오류가 발생했습니다." },
           },
         },
       },
@@ -120,7 +122,15 @@ export const swaggerDocument: JsonObject = {
         type: "object",
         properties: {
           success: { type: "boolean", example: false },
-          message: { type: "string" },
+          code: {
+            type: "string",
+            description: "기계용 메시지 키 (i18n)",
+            example: "validation.userIdRequired",
+          },
+          message: {
+            type: "string",
+            description: "Accept-Language에 맞춰 번역된 문구",
+          },
         },
       },
       User: {

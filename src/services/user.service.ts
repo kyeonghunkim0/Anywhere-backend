@@ -42,7 +42,7 @@ function toProfile(user: {
  */
 export async function getMyProfile(userId: string): Promise<UserProfile> {
   const user = await prisma.user.findUnique({ where: { id: userId } });
-  if (!user) throw new NotFoundError("존재하지 않는 사용자입니다.");
+  if (!user) throw new NotFoundError("user.notFound");
   return toProfile(user);
 }
 
@@ -65,7 +65,7 @@ interface ProfileStatsResult {
  */
 export async function getMyProfileStats(userId: string): Promise<ProfileStatsResult> {
   const user = await prisma.user.findUnique({ where: { id: userId } });
-  if (!user) throw new NotFoundError("존재하지 않는 사용자입니다.");
+  if (!user) throw new NotFoundError("user.notFound");
 
   const [
     totalRegions,
@@ -143,7 +143,7 @@ export async function updateMyProfile(
   const { nickname, profileImage } = input;
 
   if (nickname !== undefined && nickname.length > 12) {
-    throw new ValidationError("닉네임은 12자 이내로 입력해주세요.");
+    throw new ValidationError("user.nicknameTooLong", { max: 12 });
   }
 
   const user = await prisma.user.update({
@@ -202,7 +202,7 @@ interface RankerDetail {
  */
 export async function getRankerDetail(userId: string): Promise<RankerDetail> {
   const user = await prisma.user.findUnique({ where: { id: userId } });
-  if (!user) throw new NotFoundError("존재하지 않는 사용자입니다.");
+  if (!user) throw new NotFoundError("user.notFound");
 
   const [visitedRegionCount, depopulatedVisitCount, weeklyStamps, topRegions] = await Promise.all([
     prisma.userStamp

@@ -1,6 +1,6 @@
 import { Response } from "express";
 import { AuthRequest } from "../middlewares/auth.middleware.js";
-import { respondWithError } from "../middlewares/error.middleware.js";
+import { respondWithError, respondFail, localize } from "../middlewares/error.middleware.js";
 import {
   getMyProfile,
   getMyProfileStats,
@@ -16,7 +16,7 @@ export async function getMyProfileController(req: AuthRequest, res: Response): P
   try {
     const userId = req.user?.userId;
     if (!userId) {
-      res.status(401).json({ success: false, message: "인증 정보가 없습니다." });
+      respondFail(res, 401, "auth.credentialsMissing");
       return;
     }
 
@@ -35,7 +35,7 @@ export async function getMyProfileStatsController(req: AuthRequest, res: Respons
   try {
     const userId = req.user?.userId;
     if (!userId) {
-      res.status(401).json({ success: false, message: "인증 정보가 없습니다." });
+      respondFail(res, 401, "auth.credentialsMissing");
       return;
     }
 
@@ -54,13 +54,13 @@ export async function updateMyProfileController(req: AuthRequest, res: Response)
   try {
     const userId = req.user?.userId;
     if (!userId) {
-      res.status(401).json({ success: false, message: "인증 정보가 없습니다." });
+      respondFail(res, 401, "auth.credentialsMissing");
       return;
     }
 
     const { nickname, profileImage } = req.body;
     const profile = await updateMyProfile(userId, { nickname, profileImage });
-    res.json({ success: true, message: "저장되었습니다.", data: profile });
+    res.json({ success: true, message: localize(res, "common.saved"), data: profile });
   } catch (error) {
     respondWithError(res, error, "프로필 수정");
   }
@@ -74,18 +74,18 @@ export async function updateMySettingsController(req: AuthRequest, res: Response
   try {
     const userId = req.user?.userId;
     if (!userId) {
-      res.status(401).json({ success: false, message: "인증 정보가 없습니다." });
+      respondFail(res, 401, "auth.credentialsMissing");
       return;
     }
 
     const { pushEnabled } = req.body;
     if (typeof pushEnabled !== "boolean") {
-      res.status(400).json({ success: false, message: "pushEnabled(boolean)는 필수입니다." });
+      respondFail(res, 400, "user.pushEnabledRequired");
       return;
     }
 
     const profile = await updateMySettings(userId, pushEnabled);
-    res.json({ success: true, message: "설정이 저장되었습니다.", data: profile });
+    res.json({ success: true, message: localize(res, "common.settingsSaved"), data: profile });
   } catch (error) {
     respondWithError(res, error, "설정 수정");
   }

@@ -1,7 +1,7 @@
 import { Request, Response } from "express";
 import { AuthRequest } from "../middlewares/auth.middleware.js";
 import { getUserBadges, getActiveSeasonalBadges } from "../services/badge.service.js";
-import { respondWithError } from "../middlewares/error.middleware.js";
+import { respondWithError, respondFail } from "../middlewares/error.middleware.js";
 
 /**
  * GET /api/badges/me
@@ -10,7 +10,7 @@ export async function getMyBadgesController(req: AuthRequest, res: Response): Pr
   try {
     const userId = req.user?.userId;
     if (!userId) {
-      res.status(401).json({ success: false, message: "인증 정보가 없습니다." });
+      respondFail(res, 401, "auth.credentialsMissing");
       return;
     }
 

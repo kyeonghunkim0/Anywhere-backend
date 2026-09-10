@@ -1,7 +1,7 @@
 import { Request, Response } from "express";
 import { AuthRequest } from "../middlewares/auth.middleware.js";
 import { createReview, getReviewsByPlace } from "../services/review.service.js";
-import { respondWithError } from "../middlewares/error.middleware.js";
+import { respondWithError, respondFail } from "../middlewares/error.middleware.js";
 
 /**
  * POST /api/reviews
@@ -16,16 +16,13 @@ export async function createReviewController(req: AuthRequest, res: Response): P
   try {
     const userId = req.user?.userId;
     if (!userId) {
-      res.status(401).json({ success: false, message: "인증 정보가 없습니다." });
+      respondFail(res, 401, "auth.credentialsMissing");
       return;
     }
 
     const { placeId, content } = req.body;
     if (!placeId || !content) {
-      res.status(400).json({
-        success: false,
-        message: "placeId와 content는 필수입니다.",
-      });
+      respondFail(res, 400, "review.placeIdContentRequired");
       return;
     }
 

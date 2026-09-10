@@ -52,9 +52,7 @@ export async function getRandomMatch(input: MatchInput): Promise<MatchResult | n
   // 0. 일일 매칭 횟수 체크
   const todayCount = await getTodayMatchCount(userId);
   if (todayCount >= MAX_DAILY_MATCHES) {
-    throw new MatchLimitExceededError(
-      `오늘의 매칭 횟수(${MAX_DAILY_MATCHES}회)를 모두 사용했습니다. 내일 다시 시도해주세요!`
-    );
+    throw new MatchLimitExceededError(MAX_DAILY_MATCHES);
   }
 
   // 1. 전체 관광지를 region 정보와 함께 조회 (큐레이션 태그 선택 시 해당 태그로 필터링)
@@ -203,8 +201,8 @@ function weightedRandomSelect<T extends { id: string; region: { isDepopulated: b
  * 일일 매칭 횟수 초과 에러
  */
 export class MatchLimitExceededError extends RateLimitError {
-  constructor(message: string) {
-    super(message);
+  constructor(max: number) {
+    super("match.dailyLimitExceeded", { max });
     this.name = "MatchLimitExceededError";
   }
 }
@@ -292,13 +290,13 @@ export async function confirmMatch(userId: string, matchId: string): Promise<Cur
   });
 
   if (!matchHistory || matchHistory.userId !== userId) {
-    throw new NotFoundError("존재하지 않는 매칭입니다.");
+    throw new NotFoundError("match.notFound");
   }
   if (matchHistory.cancelledAt) {
-    throw new ValidationError("취소된 매칭은 확정할 수 없습니다.");
+    throw new ValidationError("match.cancelledCannotConfirm");
   }
   if (matchHistory.stamp) {
-    throw new ValidationError("이미 체크인이 완료된 매칭입니다.");
+    throw new ValidationError("match.alreadyCheckedIn");
   }
 
   await prisma.matchHistory.updateMany({
@@ -325,10 +323,10 @@ export async function cancelMatch(userId: string, matchId: string): Promise<void
   });
 
   if (!matchHistory || matchHistory.userId !== userId) {
-    throw new NotFoundError("존재하지 않는 매칭입니다.");
+    throw new NotFoundError("match.notFound");
   }
   if (matchHistory.stamp) {
-    throw new ValidationError("이미 체크인이 완료된 매칭은 취소할 수 없습니다.");
+    throw new ValidationError("match.checkedInCannotCancel");
   }
 
   await prisma.matchHistory.update({

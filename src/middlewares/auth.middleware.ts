@@ -1,6 +1,7 @@
 import { Request, Response, NextFunction } from "express";
 import jwt from "jsonwebtoken";
 import { env } from "../config/env.js";
+import { respondFail } from "./error.middleware.js";
 
 // Express Request에 user 정보를 추가하기 위한 타입 확장
 export interface AuthRequest extends Request {
@@ -28,10 +29,7 @@ export function authMiddleware(
     const authHeader = req.headers.authorization;
 
     if (!authHeader || !authHeader.startsWith("Bearer ")) {
-      res.status(401).json({
-        success: false,
-        message: "인증 토큰이 필요합니다. Authorization 헤더를 확인해주세요.",
-      });
+      respondFail(res, 401, "auth.tokenRequired");
       return;
     }
 
@@ -46,16 +44,10 @@ export function authMiddleware(
     next();
   } catch (error) {
     if (error instanceof jwt.TokenExpiredError) {
-      res.status(401).json({
-        success: false,
-        message: "토큰이 만료되었습니다. 다시 로그인해주세요.",
-      });
+      respondFail(res, 401, "auth.tokenExpired");
       return;
     }
 
-    res.status(401).json({
-      success: false,
-      message: "유효하지 않은 토큰입니다.",
-    });
+    respondFail(res, 401, "auth.tokenInvalid");
   }
 }

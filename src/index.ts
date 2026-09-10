@@ -19,6 +19,7 @@ import reviewRoutes from "./routes/review.routes.js";
 import placeRoutes from "./routes/place.routes.js";
 import searchRoutes from "./routes/search.routes.js";
 import { notFoundHandler, errorHandler } from "./middlewares/error.middleware.js";
+import { localeMiddleware } from "./middlewares/locale.middleware.js";
 import { startSyncPlacesJob } from "./jobs/syncPlaces.job.js";
 import { prisma } from "./utils/prisma.js";
 
@@ -34,6 +35,9 @@ const app = express();
 // X-Forwarded-* 헤더로 실제 클라이언트 IP·프로토콜을 인식하게 합니다.
 app.set("trust proxy", 1);
 app.use(cors());
+// Accept-Language 헤더를 지원 로케일로 해석해 req.locale에 심습니다 (에러 메시지 다국어).
+// 본문 파싱(express.json) 실패 응답도 번역되도록 그 앞에 둡니다.
+app.use(localeMiddleware);
 app.use(express.json());
 
 // ============================================

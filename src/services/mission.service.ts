@@ -2,6 +2,7 @@ import { prisma } from "../utils/prisma.js";
 import { isWithinRadius } from "../utils/haversine.js";
 import { getRegionLevel } from "../utils/gamification.js";
 import { formatRegionName } from "../utils/regionName.js";
+import type { MessageKey, MessageParams } from "../i18n/index.js";
 
 interface CheckInInput {
   userId: string;
@@ -19,7 +20,9 @@ interface EarnedBadge {
 
 interface CheckInResult {
   success: boolean;
-  message: string;
+  // 응답 메시지는 컨트롤러가 요청 로케일로 번역합니다. (서비스는 Express·로케일을 모름)
+  messageKey: MessageKey;
+  messageParams?: MessageParams;
   stamp?: {
     id: string;
     placeName: string;
@@ -56,7 +59,7 @@ export async function checkIn(input: CheckInInput): Promise<CheckInResult> {
   if (!place) {
     return {
       success: false,
-      message: "존재하지 않는 관광지입니다.",
+      messageKey: "place.notFound",
     };
   }
 
@@ -66,7 +69,7 @@ export async function checkIn(input: CheckInInput): Promise<CheckInResult> {
   if (!withinRange) {
     return {
       success: false,
-      message: "현재 위치가 목적지에서 500m 이상 떨어져 있습니다. 더 가까이 이동해주세요!",
+      messageKey: "mission.tooFar",
     };
   }
 
@@ -90,7 +93,7 @@ export async function checkIn(input: CheckInInput): Promise<CheckInResult> {
   if (existingStamp) {
     return {
       success: false,
-      message: "오늘 이미 이 장소에 체크인하셨습니다. 내일 다시 방문해주세요!",
+      messageKey: "mission.alreadyCheckedInToday",
     };
   }
 
@@ -149,13 +152,10 @@ export async function checkIn(input: CheckInInput): Promise<CheckInResult> {
     regionId: place.regionId,
   });
 
-  const bonusMessage = isDepopulated
-    ? `🌟 로컬 상생 지역 보너스! 도장 ${stampsEarned}개 획득!`
-    : `도장 ${stampsEarned}개 획득!`;
-
   return {
     success: true,
-    message: `🎉 ${place.name} 방문 인증 완료! ${bonusMessage}`,
+    messageKey: isDepopulated ? "mission.checkInSuccessBonus" : "mission.checkInSuccessNormal",
+    messageParams: { placeName: place.name, count: stampsEarned },
     stamp: {
       id: stamp.id,
       placeName: place.name,

@@ -70,7 +70,7 @@ export async function search(
 ): Promise<SearchResult> {
   const query = rawQuery.trim();
   if (query.length < 1) {
-    throw new ValidationError("검색어(q)를 입력해주세요.");
+    throw new ValidationError("search.queryRequired");
   }
 
   // 권역 칩("충청" 등) 필터. 지역·관광지 양쪽에 동일하게 적용한다.

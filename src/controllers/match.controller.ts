@@ -1,6 +1,6 @@
 import { Response } from "express";
 import { AuthRequest } from "../middlewares/auth.middleware.js";
-import { respondWithError } from "../middlewares/error.middleware.js";
+import { respondWithError, respondFail, localize } from "../middlewares/error.middleware.js";
 import {
   getRandomMatch,
   confirmMatch,
@@ -15,7 +15,7 @@ export async function getRandomMatchController(req: AuthRequest, res: Response):
   try {
     const userId = req.user?.userId;
     if (!userId) {
-      res.status(401).json({ success: false, message: "인증 정보가 없습니다." });
+      respondFail(res, 401, "auth.credentialsMissing");
       return;
     }
 
@@ -25,20 +25,14 @@ export async function getRandomMatchController(req: AuthRequest, res: Response):
     const tagId = req.query.tagId as string | undefined;
 
     if (isNaN(lat) || isNaN(lng)) {
-      res.status(400).json({
-        success: false,
-        message: "lat(위도)과 lng(경도)은 필수 쿼리 파라미터입니다.",
-      });
+      respondFail(res, 400, "match.latLngRequired");
       return;
     }
 
     const result = await getRandomMatch({ userId, userLat: lat, userLng: lng, radiusKm, tagId });
 
     if (!result) {
-      res.status(404).json({
-        success: false,
-        message: "주변에 매칭 가능한 관광지가 없습니다. 반경을 넓혀보세요.",
-      });
+      respondFail(res, 404, "match.noMatchNearby");
       return;
     }
 
@@ -59,7 +53,7 @@ export async function confirmMatchController(req: AuthRequest, res: Response): P
   try {
     const userId = req.user?.userId;
     if (!userId) {
-      res.status(401).json({ success: false, message: "인증 정보가 없습니다." });
+      respondFail(res, 401, "auth.credentialsMissing");
       return;
     }
 
@@ -80,14 +74,14 @@ export async function cancelMatchController(req: AuthRequest, res: Response): Pr
   try {
     const userId = req.user?.userId;
     if (!userId) {
-      res.status(401).json({ success: false, message: "인증 정보가 없습니다." });
+      respondFail(res, 401, "auth.credentialsMissing");
       return;
     }
 
     const matchId = req.params.matchId as string;
     await cancelMatch(userId, matchId);
 
-    res.json({ success: true, message: "여정을 취소했습니다." });
+    res.json({ success: true, message: localize(res, "match.tripCancelled") });
   } catch (error) {
     respondWithError(res, error, "매칭 취소");
   }
@@ -101,7 +95,7 @@ export async function getCurrentTripController(req: AuthRequest, res: Response):
   try {
     const userId = req.user?.userId;
     if (!userId) {
-      res.status(401).json({ success: false, message: "인증 정보가 없습니다." });
+      respondFail(res, 401, "auth.credentialsMissing");
       return;
     }
 

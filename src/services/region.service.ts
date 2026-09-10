@@ -99,7 +99,7 @@ interface RegionDetailResult {
 export async function getRegionDetail(regionId: string): Promise<RegionDetailResult> {
   const region = await prisma.region.findUnique({ where: { id: regionId } });
   if (!region) {
-    throw new NotFoundError("존재하지 않는 지역입니다.");
+    throw new NotFoundError("region.notFound");
   }
 
   const [visitorCount, uniqueVisitorCount] = await Promise.all([

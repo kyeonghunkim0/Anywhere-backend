@@ -108,7 +108,7 @@ export async function getMyRanking(userId: string): Promise<MyRankResult> {
   });
 
   if (!user) {
-    throw new NotFoundError("존재하지 않는 사용자입니다.");
+    throw new NotFoundError("user.notFound");
   }
 
   // 나보다 도장이 많은 유저 수 = 내 순위 - 1

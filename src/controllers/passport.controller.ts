@@ -1,7 +1,7 @@
 import { Response } from "express";
 import { AuthRequest } from "../middlewares/auth.middleware.js";
 import { getPassport } from "../services/passport.service.js";
-import { respondWithError } from "../middlewares/error.middleware.js";
+import { respondWithError, respondFail } from "../middlewares/error.middleware.js";
 
 /**
  * GET /api/passport/:userId
@@ -11,10 +11,7 @@ export async function getPassportController(req: AuthRequest, res: Response): Pr
     const userId = req.params.userId as string;
 
     if (!userId) {
-      res.status(400).json({
-        success: false,
-        message: "userId는 필수입니다.",
-      });
+      respondFail(res, 400, "validation.userIdRequired");
       return;
     }
 

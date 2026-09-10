@@ -1,6 +1,6 @@
 import { Request, Response } from "express";
 import { getRecentFeed } from "../services/feed.service.js";
-import { respondWithError } from "../middlewares/error.middleware.js";
+import { respondWithError, respondFail } from "../middlewares/error.middleware.js";
 
 /**
  * GET /api/feed/recent?limit=20
@@ -11,10 +11,7 @@ export async function getRecentFeedController(req: Request, res: Response): Prom
     const limit = req.query.limit ? parseInt(req.query.limit as string, 10) : 20;
 
     if (isNaN(limit) || limit < 1 || limit > 50) {
-      res.status(400).json({
-        success: false,
-        message: "limit은 1~50 사이의 숫자여야 합니다.",
-      });
+      respondFail(res, 400, "validation.pagingRange", { label: "limit", min: 1, max: 50 });
       return;
     }
 

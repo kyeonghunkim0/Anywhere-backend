@@ -12,8 +12,8 @@ import { UnauthorizedError } from "../utils/errors.js";
  * (컨트롤러는 이 에러를 401로 응답합니다)
  */
 export class IdTokenVerificationError extends UnauthorizedError {
-  constructor(message: string) {
-    super(message);
+  constructor() {
+    super("auth.idTokenVerificationFailed");
     this.name = "IdTokenVerificationError";
   }
 }
@@ -70,7 +70,7 @@ export async function loginWithSocial(input: LoginInput): Promise<AuthResult> {
     const detail = error instanceof Error ? error.message : String(error);
     console.error(`${socialType} idToken 검증 실패:`, detail);
     if (isInvalidTokenError(error)) {
-      throw new IdTokenVerificationError("idToken 검증에 실패했습니다.");
+      throw new IdTokenVerificationError();
     }
     throw error;
   }

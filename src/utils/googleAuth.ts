@@ -27,14 +27,14 @@ export async function verifyGoogleIdToken(idToken: string): Promise<GoogleIdToke
     // 인증서 조회 실패 같은 네트워크 오류에는 code/response 필드가 붙습니다.
     // 후자는 서버 문제이므로 그대로 올려보내 500이 되게 합니다.
     if (error instanceof Error && !("code" in error || "response" in error)) {
-      throw new UnauthorizedError("유효하지 않은 Google idToken입니다.");
+      throw new UnauthorizedError("auth.googleTokenInvalid");
     }
     throw error;
   }
 
   const payload = ticket.getPayload();
   if (!payload?.sub) {
-    throw new UnauthorizedError("유효하지 않은 Google idToken입니다.");
+    throw new UnauthorizedError("auth.googleTokenInvalid");
   }
 
   return {

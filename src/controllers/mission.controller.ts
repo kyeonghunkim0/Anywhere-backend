@@ -1,7 +1,7 @@
 import { Response } from "express";
 import { AuthRequest } from "../middlewares/auth.middleware.js";
 import { checkIn } from "../services/mission.service.js";
-import { respondWithError } from "../middlewares/error.middleware.js";
+import { respondWithError, respondFail, localize } from "../middlewares/error.middleware.js";
 
 /**
  * POST /api/mission/check-in
@@ -17,28 +17,28 @@ export async function checkInController(req: AuthRequest, res: Response): Promis
   try {
     const userId = req.user?.userId;
     if (!userId) {
-      res.status(401).json({ success: false, message: "인증 정보가 없습니다." });
+      respondFail(res, 401, "auth.credentialsMissing");
       return;
     }
 
     const { placeId, lat, lng } = req.body;
 
     if (!placeId || lat === undefined || lng === undefined) {
-      res.status(400).json({
-        success: false,
-        message: "placeId, lat(위도), lng(경도)은 필수입니다.",
-      });
+      respondFail(res, 400, "mission.paramsRequired");
       return;
     }
 
-    const result = await checkIn({
+    const { messageKey, messageParams, ...result } = await checkIn({
       userId,
       placeId,
       userLat: parseFloat(lat),
       userLng: parseFloat(lng),
     });
 
-    res.status(result.success ? 200 : 400).json(result);
+    res.status(result.success ? 200 : 400).json({
+      ...result,
+      message: localize(res, messageKey, messageParams),
+    });
   } catch (error) {
     respondWithError(res, error, "체크인");
   }

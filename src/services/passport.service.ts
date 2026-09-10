@@ -38,7 +38,7 @@ export async function getPassport(userId: string): Promise<PassportResult> {
   });
 
   if (!user) {
-    throw new NotFoundError("존재하지 않는 사용자입니다.");
+    throw new NotFoundError("user.notFound");
   }
 
   // 전체 지역 목록 (시·군 단위만 — 특별·광역시 자치구 제외)

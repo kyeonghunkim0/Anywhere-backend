@@ -279,6 +279,12 @@ export const messages = {
   },
 
   // ---------- 관광지 / 지역 ----------
+  "place.coordsInvalid": {
+    ko: "lat와 lng는 함께, 유효한 좌표 범위로 넘겨주세요.",
+    en: "Provide lat and lng together as a valid coordinate pair.",
+    ja: "latとlngは有効な座標として一緒に指定してください。",
+    zh: "请同时提供有效范围内的 lat 与 lng。",
+  },
   "place.notFound": {
     ko: "존재하지 않는 관광지입니다.",
     en: "This attraction does not exist.",

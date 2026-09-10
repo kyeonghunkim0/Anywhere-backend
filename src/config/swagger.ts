@@ -733,11 +733,45 @@ export const swaggerDocument: JsonObject = {
       get: {
         tags: ["Tags"],
         summary: "해시태그별 관광지 목록",
+        description:
+          "각 관광지의 좌표(mapX/mapY)를 포함합니다. lat/lng를 함께 넘기면 관광지별 distanceKm(km, 소수 1자리)를 서버가 계산해 실어 줍니다.",
         parameters: [
           { name: "tagId", in: "path", required: true, schema: { type: "string" } },
+          { name: "lat", in: "query", required: false, schema: { type: "number" }, description: "사용자 위도 (lng와 함께)" },
+          { name: "lng", in: "query", required: false, schema: { type: "number" }, description: "사용자 경도 (lat와 함께)" },
         ],
         responses: {
           "200": { description: "조회 성공" },
+          "400": { description: "lat/lng 중 하나만 넘겼거나 좌표 범위 초과" },
+        },
+      },
+    },
+    "/api/places": {
+      get: {
+        tags: ["Places"],
+        summary: "장소 카탈로그 (검색어 없을 때의 추천 목록)",
+        description:
+          "검색·발견 대상 장소 목록입니다. 특별·광역시 자치구는 제외(시·군 단위만), " +
+          "인구감소지역 → 도장 수 → 이름 순으로 정렬합니다. " +
+          "depopulated=true면 인구감소지역만, regionGroup으로 권역 필터, " +
+          "lat/lng를 함께 넘기면 장소별 distanceKm를 서버가 계산합니다. (인증 불필요)",
+        parameters: [
+          { name: "depopulated", in: "query", required: false, schema: { type: "boolean" }, description: "true면 인구감소지역만" },
+          {
+            name: "regionGroup",
+            in: "query",
+            required: false,
+            schema: { type: "string", enum: ["수도권", "충청", "전라", "경상", "강원", "제주"] },
+            description: "권역 칩 필터. 생략 또는 '전지역'이면 전체",
+          },
+          { name: "limit", in: "query", required: false, schema: { type: "integer", default: 20, minimum: 1, maximum: 50 } },
+          { name: "offset", in: "query", required: false, schema: { type: "integer", default: 0, minimum: 0 } },
+          { name: "lat", in: "query", required: false, schema: { type: "number" }, description: "사용자 위도 (lng와 함께)" },
+          { name: "lng", in: "query", required: false, schema: { type: "number" }, description: "사용자 경도 (lat와 함께)" },
+        ],
+        responses: {
+          "200": { description: "조회 성공" },
+          "400": { description: "잘못된 limit/offset·regionGroup·좌표" },
         },
       },
     },
@@ -987,15 +1021,19 @@ export const swaggerDocument: JsonObject = {
           "특별·광역시 자치구는 결과에서 제외되며(시·군 단위만), " +
           "관광지는 이름 일치 우선(정확 → 접두 → 포함 → 주소) 정렬 후 limit/offset으로 페이징합니다. " +
           "지역은 regionLimit/regionOffset으로 따로 페이징합니다. " +
-          "regionGroup으로 권역(수도권·충청·전라·경상·강원·제주)을 지정하면 지역·관광지 결과에 함께 적용됩니다. (인증 불필요)",
+          "regionGroup으로 권역(수도권·충청·전라·경상·강원·제주)을 지정하면 지역·관광지 결과에 함께 적용됩니다. " +
+          "q를 생략하거나 빈 값으로 보내면 검색 대신 추천 목록(장소 카탈로그)을 places에 담아 주고 regions는 빈 페이지가 됩니다. " +
+          "lat/lng를 함께 넘기면 관광지별 distanceKm를 서버가 계산합니다. (인증 불필요)",
         parameters: [
           {
             name: "q",
             in: "query",
-            required: true,
+            required: false,
             schema: { type: "string" },
-            description: "검색어 (예: 포항, 해수욕장, 강릉 카페)",
+            description: "검색어 (예: 포항, 해수욕장, 강릉 카페). 생략 시 추천 목록 반환",
           },
+          { name: "lat", in: "query", required: false, schema: { type: "number" }, description: "사용자 위도 (lng와 함께)" },
+          { name: "lng", in: "query", required: false, schema: { type: "number" }, description: "사용자 경도 (lat와 함께)" },
           {
             name: "limit",
             in: "query",
@@ -1088,6 +1126,7 @@ export const swaggerDocument: JsonObject = {
                                   mapX: { type: "number" },
                                   mapY: { type: "number" },
                                   stampCount: { type: "integer" },
+                                  distanceKm: { type: "number", nullable: true, example: 3.2 },
                                   region: {
                                     type: "object",
                                     properties: {

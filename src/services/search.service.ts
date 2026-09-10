@@ -1,9 +1,10 @@
 import type { Prisma } from "../generated/prisma/client.js";
 import { prisma } from "../utils/prisma.js";
-import { ValidationError } from "../utils/errors.js";
 import { formatRegionName } from "../utils/regionName.js";
 import { CITY_COUNTY_ONLY } from "../utils/regionFilter.js";
 import { regionGroupWhere } from "../utils/regionGroup.js";
+import { distanceToPlace, type Coords } from "../utils/coords.js";
+import { listPlaces } from "./place.service.js";
 
 // ============================================
 // 통합 검색 (관광지 이름·주소 / 지역 이름)
@@ -37,6 +38,7 @@ interface SearchPlaceItem {
   mapX: number; // 경도
   mapY: number; // 위도
   stampCount: number;
+  distanceKm: number | null; // 좌표(lat/lng)를 넘겼을 때만 채워진다
   region: SearchPlaceRegion;
 }
 
@@ -59,6 +61,9 @@ interface SearchResult {
  * - 특별·광역시 자치구는 결과에서 제외한다 (시·군 단위만).
  * - 관광지는 "이름이 키워드로 시작 → 이름에 포함 → 주소에만 포함" 순으로 정렬한 뒤
  *   limit/offset으로 잘라 내려준다.
+ * - 검색어(q)가 비면 검색 대신 "추천 목록"(listPlaces)을 places에 담아 돌려준다.
+ *   이때 regions는 빈 페이지다.
+ * - coords(lat/lng)를 넘기면 각 관광지까지의 distanceKm를 서버에서 계산한다.
  */
 export async function search(
   rawQuery: string,
@@ -66,11 +71,19 @@ export async function search(
   offset: number = 0,
   regionLimit: number = 20,
   regionOffset: number = 0,
-  regionGroup?: string
+  regionGroup?: string,
+  coords?: Coords | null
 ): Promise<SearchResult> {
   const query = rawQuery.trim();
+
+  // 검색어가 비면 "추천 목록"을 내려준다 (클라이언트의 빈 검색어 가드 제거용).
   if (query.length < 1) {
-    throw new ValidationError("search.queryRequired");
+    const browse = await listPlaces({ limit, offset, regionGroup, coords });
+    return {
+      query: "",
+      regions: { total: 0, limit: regionLimit, offset: regionOffset, items: [] },
+      places: browse,
+    };
   }
 
   // 권역 칩("충청" 등) 필터. 지역·관광지 양쪽에 동일하게 적용한다.
@@ -111,6 +124,7 @@ export async function search(
       mapX: place.mapX,
       mapY: place.mapY,
       stampCount: place._count.stamps,
+      distanceKm: distanceToPlace(coords, place.mapY, place.mapX),
       region: {
         id: place.region.id,
         sidoName: place.region.sidoName,

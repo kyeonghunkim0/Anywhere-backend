@@ -1,5 +1,6 @@
 import { prisma } from "../utils/prisma.js";
 import { formatRegionName } from "../utils/regionName.js";
+import { distanceToPlace, type Coords } from "../utils/coords.js";
 
 interface TagItem {
   id: string;
@@ -31,6 +32,9 @@ interface TaggedPlace {
   name: string;
   address: string;
   thumbnail: string | null;
+  mapX: number; // 경도
+  mapY: number; // 위도
+  distanceKm: number | null; // 좌표(lat/lng)를 넘겼을 때만 채워진다
   sidoName: string;
   sigunguName: string;
   displayName: string; // 화면 표시용 (예: "부산 중구")
@@ -38,9 +42,13 @@ interface TaggedPlace {
 }
 
 /**
- * 특정 해시태그가 달린 관광지 목록 조회
+ * 특정 해시태그가 달린 관광지 목록 조회.
+ * coords(lat/lng)를 넘기면 각 관광지까지의 distanceKm를 서버에서 계산한다.
  */
-export async function getPlacesByTag(tagId: string): Promise<TaggedPlace[]> {
+export async function getPlacesByTag(
+  tagId: string,
+  coords?: Coords | null
+): Promise<TaggedPlace[]> {
   const placeTags = await prisma.placeTag.findMany({
     where: { tagId },
     include: { place: { include: { region: true } } },
@@ -51,6 +59,9 @@ export async function getPlacesByTag(tagId: string): Promise<TaggedPlace[]> {
     name: place.name,
     address: place.address,
     thumbnail: place.thumbnail,
+    mapX: place.mapX,
+    mapY: place.mapY,
+    distanceKm: distanceToPlace(coords, place.mapY, place.mapX),
     sidoName: place.region.sidoName,
     sigunguName: place.region.sigunguName,
     displayName: formatRegionName(place.region.sidoName, place.region.sigunguName),

@@ -1,6 +1,10 @@
+import type { Prisma } from "../generated/prisma/client.js";
 import { prisma } from "../utils/prisma.js";
 import { NotFoundError } from "../utils/errors.js";
 import { formatRegionName } from "../utils/regionName.js";
+import { CITY_COUNTY_ONLY } from "../utils/regionFilter.js";
+import { regionGroupWhere } from "../utils/regionGroup.js";
+import { distanceToPlace, type Coords } from "../utils/coords.js";
 import { getReviewsByPlace } from "./review.service.js";
 
 // ============================================
@@ -85,4 +89,99 @@ export async function getPlaceDetail(placeId: string, reviewLimit: number = 20):
     reviewCount: place._count.reviews,
     reviews,
   };
+}
+
+// ============================================
+// 장소 브라우즈 목록 (검색어가 비었을 때의 "추천 목록")
+// ============================================
+
+interface PlaceCardRegion {
+  id: string;
+  sidoName: string;
+  sigunguName: string;
+  displayName: string; // 화면 표시용 (예: "부산 중구")
+  isDepopulated: boolean;
+}
+
+export interface PlaceCardItem {
+  id: string;
+  name: string;
+  address: string;
+  thumbnail: string | null;
+  mapX: number; // 경도
+  mapY: number; // 위도
+  stampCount: number;
+  distanceKm: number | null; // 좌표(lat/lng)를 넘겼을 때만 채워진다
+  region: PlaceCardRegion;
+}
+
+export interface PlaceListPage {
+  total: number;
+  limit: number;
+  offset: number;
+  items: PlaceCardItem[];
+}
+
+interface ListPlacesOptions {
+  limit?: number;
+  offset?: number;
+  regionGroup?: string;
+  depopulatedOnly?: boolean;
+  coords?: Coords | null;
+}
+
+/**
+ * 검색·발견 대상 장소 카탈로그.
+ * - 특별·광역시 자치구는 제외(시·군 단위만), regionGroup 권역 필터 적용
+ * - 인구감소지역 → 도장 수 → 이름 순으로 정렬 (depopulatedOnly면 인구감소지역만)
+ * - coords를 넘기면 각 장소까지의 distanceKm를 서버에서 계산해 실어 준다
+ */
+export async function listPlaces(options: ListPlacesOptions = {}): Promise<PlaceListPage> {
+  const { limit = 20, offset = 0, regionGroup, depopulatedOnly = false, coords } = options;
+
+  const where: Prisma.PlaceWhereInput = {
+    region: {
+      ...CITY_COUNTY_ONLY,
+      ...regionGroupWhere(regionGroup),
+      ...(depopulatedOnly ? { isDepopulated: true } : {}),
+    },
+  };
+
+  const [total, places] = await Promise.all([
+    prisma.place.count({ where }),
+    prisma.place.findMany({
+      where,
+      include: {
+        region: true,
+        _count: { select: { stamps: true } },
+      },
+      orderBy: [
+        { region: { isDepopulated: "desc" } },
+        { stamps: { _count: "desc" } },
+        { name: "asc" },
+      ],
+      skip: offset,
+      take: limit,
+    }),
+  ]);
+
+  const items: PlaceCardItem[] = places.map((place) => ({
+    id: place.id,
+    name: place.name,
+    address: place.address,
+    thumbnail: place.thumbnail,
+    mapX: place.mapX,
+    mapY: place.mapY,
+    stampCount: place._count.stamps,
+    distanceKm: distanceToPlace(coords, place.mapY, place.mapX),
+    region: {
+      id: place.region.id,
+      sidoName: place.region.sidoName,
+      sigunguName: place.region.sigunguName,
+      displayName: formatRegionName(place.region.sidoName, place.region.sigunguName),
+      isDepopulated: place.region.isDepopulated,
+    },
+  }));
+
+  return { total, limit, offset, items };
 }

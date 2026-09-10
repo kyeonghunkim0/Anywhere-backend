@@ -21,46 +21,120 @@ const tags = [
 ];
 
 /**
- * 스페셜(시즌 한정) & 로컬 히든 퀘스트 뱃지 샘플
- * - SEASONAL: 마감 기한(D-day)이 있는 시즌 한정 뱃지
- * - HIDDEN: 반경 10~20m 마이크로 스팟에서만 활성화되는 히든 뱃지
+ * 스페셜 퀘스트(SEASONAL) - 실제 지역 축제 기반 시즌 한정 뱃지 10종
+ *
+ * 아이콘 정책 (2026-09-10 업데이트)
+ * - 각 축제의 실제 공식 로고/포스터 이미지를 사용한다. (씰 글리프 오버레이 방식 폐기)
+ * - `icon`은 `badges/<slug>.png` 상대 경로이며 assets/badges/ 에 실제 파일로 존재한다.
+ *   서버가 `/static/badges/<slug>.png` 로 서빙한다 (toPublicAssetUrl).
+ * - key에 연도를 넣는다. 같은 축제라도 2026과 2027은 다른 수집품이다.
+ *
+ * 기간 규칙
+ * - `startAt` = 축제 시작 30일 전 (퀘스트 오픈일). 홈 캐러셀에 미리 떠서 여행 계획을 만든다.
+ * - `endAt`   = 축제 종료일. D-day 카운트다운의 기준이다.
+ * - ⚠️ 축제 일정은 매년 지자체가 확정 공고한다. 아래 날짜는 예년 개최 시기 기준의
+ *   운영 초기값이므로, 시즌 진입 전에 지자체 공고로 반드시 갱신해야 한다.
  */
-const badges = [
+const seasonalQuests = [
   {
-    key: "jinhae_2026_spring",
-    name: "진해 군항제 벚꽃",
-    description: "군항제 방문 인증",
-    icon: "cherry-blossom",
-    type: "SEASONAL",
-    startAt: new Date("2026-03-28"),
-    endAt: new Date("2026-04-06"),
+    key: "jinhae_gunhangje_2027",
+    name: "진해 군항제 2027",
+    description: "벚꽃이 가장 짙은 날 창원에서 도장을 찍어보세요.",
+    icon: "badges/jinhae-gunhangje-2027.png",
+    sidoName: "경상남도",
+    sigunguName: "창원시",
+    startAt: new Date("2027-02-25"),
+    endAt: new Date("2027-04-05"),
   },
   {
-    key: "autumn_secret_fishing_spot",
-    name: "강태공의 계절",
-    description: "비밀 낚시터 방문 인증",
-    icon: "fish",
-    type: "SEASONAL",
+    key: "hampyeong_butterfly_2027",
+    name: "함평 나비대축제 2027",
+    description: "나비가 돌아오는 봄, 함평 들판에서만 열리는 퀘스트.",
+    icon: "badges/hampyeong-butterfly-2027.png",
+    sidoName: "전라남도",
+    sigunguName: "함평군",
+    startAt: new Date("2027-03-25"),
+    endAt: new Date("2027-05-05"),
+  },
+  {
+    key: "boryeong_mud_2027",
+    name: "보령 머드축제 2027",
+    description: "대천해수욕장의 여름. 진흙투성이가 되어도 도장은 남습니다.",
+    icon: "badges/boryeong-mud-2027.png",
+    sidoName: "충청남도",
+    sigunguName: "보령시",
+    startAt: new Date("2027-06-17"),
+    endAt: new Date("2027-07-26"),
+  },
+  {
+    key: "bonghwa_sweetfish_2027",
+    name: "봉화 은어축제 2027",
+    description: "내성천 맑은 물에 은어가 오르는 열흘 동안만 열립니다.",
+    icon: "badges/bonghwa-sweetfish-2027.png",
+    sidoName: "경상북도",
+    sigunguName: "봉화군",
+    startAt: new Date("2027-06-24"),
+    endAt: new Date("2027-08-01"),
+  },
+  {
+    key: "jeongseon_arirang_2026",
+    name: "정선아리랑제 2026",
+    description: "아우라지에 가을이 내려앉는 나흘. 정선에서만 받는 도장.",
+    icon: "badges/jeongseon-arirang-2026.png",
+    sidoName: "강원특별자치도",
+    sigunguName: "정선군",
+    startAt: new Date("2026-08-25"),
+    endAt: new Date("2026-09-27"),
+  },
+  {
+    key: "jinju_lantern_2026",
+    name: "진주남강유등축제 2026",
+    description: "남강에 유등이 뜨는 밤에만 켜지는 퀘스트.",
+    icon: "badges/jinju-lantern-2026.png",
+    sidoName: "경상남도",
+    sigunguName: "진주시",
     startAt: new Date("2026-09-01"),
-    endAt: new Date("2026-11-30"),
+    endAt: new Date("2026-10-11"),
   },
   {
-    key: "summer_2026_night_market",
-    name: "여름밤 야시장",
-    description: "야시장 맛집 방문 인증",
-    icon: "night-market",
-    type: "SEASONAL",
-    startAt: new Date("2026-08-01"),
-    endAt: new Date("2026-08-31"),
+    key: "gimje_horizon_2026",
+    name: "김제 지평선축제 2026",
+    description: "지평선이 보이는 유일한 들녘, 벽골제에서 찍는 가을 도장.",
+    icon: "badges/gimje-horizon-2026.png",
+    sidoName: "전북특별자치도",
+    sigunguName: "김제시",
+    startAt: new Date("2026-09-07"),
+    endAt: new Date("2026-10-11"),
   },
   {
-    key: "summer_2026_watermelon_beach",
-    name: "수박 비치 파티",
-    description: "해변 수박 축제 방문 인증",
-    icon: "watermelon",
-    type: "SEASONAL",
-    startAt: new Date("2026-08-10"),
-    endAt: new Date("2026-09-10"),
+    key: "yeongdong_nangye_2026",
+    name: "영동 난계국악축제 2026",
+    description: "국악의 고장 영동에서 사흘 동안만 열리는 소리 퀘스트.",
+    icon: "badges/yeongdong-nangye-2026.png",
+    sidoName: "충청북도",
+    sigunguName: "영동군",
+    startAt: new Date("2026-09-09"),
+    endAt: new Date("2026-10-11"),
+  },
+  {
+    key: "hwacheon_ice_2027",
+    name: "화천 산천어축제 2027",
+    description: "얼어붙은 화천천 위에서만 받을 수 있는 한겨울 도장.",
+    icon: "badges/hwacheon-ice-2027.png",
+    sidoName: "강원특별자치도",
+    sigunguName: "화천군",
+    startAt: new Date("2026-12-10"),
+    endAt: new Date("2027-01-31"),
+  },
+  {
+    key: "taebaek_snow_2027",
+    name: "태백산 눈축제 2027",
+    description: "해발 1,567m 눈꽃 아래. 겨울 태백에서만 열립니다.",
+    icon: "badges/taebaek-snow-2027.png",
+    sidoName: "강원특별자치도",
+    sigunguName: "태백시",
+    startAt: new Date("2026-12-23"),
+    endAt: new Date("2027-01-31"),
   },
 ];
 
@@ -273,12 +347,60 @@ async function main() {
     });
   }
 
-  for (const badge of badges) {
-    await prisma.badge.upsert({
-      where: { key: badge.key },
-      update: badge,
-      create: badge,
+  // 스페셜 퀘스트(실제 축제 기반 시즌 한정 뱃지) - 지역에 연결해서 등록
+  let seasonalQuestCount = 0;
+  for (const quest of seasonalQuests) {
+    const region = await prisma.region.findFirst({
+      where: { sidoName: quest.sidoName, sigunguName: quest.sigunguName },
     });
+    if (!region) {
+      console.warn(
+        `  ⚠️  "${quest.sidoName} ${quest.sigunguName}" 지역이 없어 "${quest.name}" 퀘스트를 건너뜁니다. (npm run seed 먼저 실행)`
+      );
+      continue;
+    }
+
+    const data = {
+      key: quest.key,
+      name: quest.name,
+      description: quest.description,
+      icon: quest.icon,
+      type: "SEASONAL",
+      startAt: quest.startAt,
+      endAt: quest.endAt,
+      regionId: region.id,
+    };
+    await prisma.badge.upsert({
+      where: { key: quest.key },
+      update: data,
+      create: data,
+    });
+    seasonalQuestCount += 1;
+  }
+
+  // 초기 개발용 샘플 시즌 뱃지 정리 (실제 축제 기반 스페셜 퀘스트로 대체됨)
+  // 이미 획득한 유저가 있으면 여권 기록이 사라지므로 지우지 않고 경고만 남긴다.
+  const legacySeasonalKeys = [
+    "jinhae_2026_spring",
+    "autumn_secret_fishing_spot",
+    "summer_2026_night_market",
+    "summer_2026_watermelon_beach",
+  ];
+  for (const key of legacySeasonalKeys) {
+    const legacy = await prisma.badge.findUnique({
+      where: { key },
+      include: { _count: { select: { userBadges: true } } },
+    });
+    if (!legacy) continue;
+
+    if (legacy._count.userBadges > 0) {
+      console.warn(
+        `  ⚠️  샘플 뱃지 "${legacy.name}"은 이미 ${legacy._count.userBadges}명이 획득해 삭제하지 않았습니다. 수동으로 확인해주세요.`
+      );
+      continue;
+    }
+    await prisma.badge.delete({ where: { key } });
+    console.log(`  🧹 샘플 시즌 뱃지 삭제: ${legacy.name}`);
   }
 
   // 예전 랜드마크식 key로 만들어졌던 지역 뱃지 정리 (기초자치단체 뱃지로 재정의)
@@ -326,7 +448,7 @@ async function main() {
   }
 
   console.log(
-    `✅ 시딩 완료! 태그 ${tags.length}개, 시즌 뱃지 ${badges.length}개, 지역 뱃지 ${regionBadgeCount}개`
+    `✅ 시딩 완료! 태그 ${tags.length}개, 스페셜 퀘스트 ${seasonalQuestCount}개, 지역 뱃지 ${regionBadgeCount}개`
   );
 }
 

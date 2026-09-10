@@ -28,6 +28,12 @@ export const env = {
   // 앱 정보 (최초 실행 시 클라이언트 버전/점검 상태 확인용)
   APP_LATEST_VERSION: process.env.APP_LATEST_VERSION || "1.0.0",
   APP_MIN_VERSION: process.env.APP_MIN_VERSION || "1.0.0", // 이 버전 미만은 강제 업데이트
+  // 강제 업데이트 안내 문구 및 스토어 이동 링크
+  APP_UPDATE_MESSAGE:
+    process.env.APP_UPDATE_MESSAGE ||
+    "새로운 버전이 출시되었습니다. 원활한 이용을 위해 앱을 업데이트해주세요.",
+  APP_STORE_URL: process.env.APP_STORE_URL || "", // iOS App Store 링크
+  PLAY_STORE_URL: process.env.PLAY_STORE_URL || "", // Android Play Store 링크
   MAINTENANCE_MODE: process.env.MAINTENANCE_MODE === "true",
   MAINTENANCE_MESSAGE:
     process.env.MAINTENANCE_MESSAGE || "서비스 점검 중입니다. 잠시 후 다시 이용해주세요.",

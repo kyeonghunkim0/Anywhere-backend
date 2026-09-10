@@ -917,7 +917,8 @@ export const swaggerDocument: JsonObject = {
         summary: "앱 정보 조회 (버전 / 점검 상태)",
         description:
           "앱 최초 실행 시 호출하여 강제 업데이트 여부와 서비스 점검 상태를 확인합니다.\n\n" +
-          "- `version` 쿼리 파라미터로 클라이언트 버전을 전달하면 `forceUpdate` 여부를 계산합니다\n" +
+          "- `version` 쿼리 파라미터로 클라이언트 버전을 전달하면 `forceUpdate`(강제) / `updateAvailable`(선택) 여부를 계산합니다\n" +
+          "- `platform`(ios/android)을 전달하면 해당 스토어 링크를 `storeUrl`로 내려줍니다\n" +
           "- 인증이 필요하지 않습니다",
         parameters: [
           {
@@ -926,6 +927,13 @@ export const swaggerDocument: JsonObject = {
             required: false,
             schema: { type: "string", example: "1.0.0" },
             description: "클라이언트 앱 버전",
+          },
+          {
+            name: "platform",
+            in: "query",
+            required: false,
+            schema: { type: "string", enum: ["ios", "android"] },
+            description: "클라이언트 플랫폼. storeUrl 결정에 사용",
           },
         ],
         responses: {
@@ -944,6 +952,9 @@ export const swaggerDocument: JsonObject = {
                         latestVersion: { type: "string", example: "1.2.0" },
                         minVersion: { type: "string", example: "1.0.0" },
                         forceUpdate: { type: "boolean", example: false },
+                        updateAvailable: { type: "boolean", example: true },
+                        updateMessage: { type: "string", nullable: true },
+                        storeUrl: { type: "string", example: "https://apps.apple.com/us/app/어딘지/id6795130564" },
                         maintenanceMode: { type: "boolean", example: false },
                         maintenanceMessage: { type: "string", nullable: true },
                         serverTime: { type: "string", format: "date-time" },

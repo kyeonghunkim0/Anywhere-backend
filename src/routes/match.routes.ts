@@ -1,6 +1,7 @@
 import { Router } from "express";
 import {
   getRandomMatchController,
+  createCustomMatchController,
   confirmMatchController,
   cancelMatchController,
   getCurrentTripController,
@@ -14,6 +15,12 @@ const router = Router();
  * 사용자 GPS 기반 랜덤 관광지 매칭 (인구감소지역 70% 가중치)
  */
 router.get("/random", authMiddleware, getRandomMatchController);
+
+/**
+ * POST /api/match/custom
+ * "내 맘대로 떠나기" - 유저가 직접 고른 관광지로 매칭 이력 생성 (이후 /:matchId/confirm으로 확정)
+ */
+router.post("/custom", authMiddleware, createCustomMatchController);
 
 /**
  * GET /api/match/current

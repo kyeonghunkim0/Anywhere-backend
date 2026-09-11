@@ -333,6 +333,12 @@ export const messages = {
     ja: "存在しない観光地です。",
     zh: "该景点不存在。",
   },
+  "place.idRequired": {
+    ko: "placeId는 필수입니다.",
+    en: "placeId is required.",
+    ja: "placeIdは必須です。",
+    zh: "placeId 为必填项。",
+  },
   "region.notFound": {
     ko: "존재하지 않는 지역입니다.",
     en: "This region does not exist.",

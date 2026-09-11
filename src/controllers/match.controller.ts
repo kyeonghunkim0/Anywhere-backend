@@ -3,6 +3,7 @@ import { AuthRequest } from "../middlewares/auth.middleware.js";
 import { respondWithError, respondFail, localize } from "../middlewares/error.middleware.js";
 import {
   getRandomMatch,
+  createCustomMatch,
   confirmMatch,
   cancelMatch,
   getCurrentTrip,
@@ -42,6 +43,46 @@ export async function getRandomMatchController(req: AuthRequest, res: Response):
     });
   } catch (error) {
     respondWithError(res, error, "랜덤 매칭");
+  }
+}
+
+/**
+ * POST /api/match/custom
+ * "내 맘대로 떠나기" - 랜덤 매칭 없이 유저가 직접 고른 관광지로 매칭 이력 생성
+ *
+ * Request Body:
+ * {
+ *   "placeId": "필수 — 유저가 직접 고른 관광지 ID",
+ *   "lat": "필수 — 사용자 위도",
+ *   "lng": "필수 — 사용자 경도"
+ * }
+ */
+export async function createCustomMatchController(req: AuthRequest, res: Response): Promise<void> {
+  try {
+    const userId = req.user?.userId;
+    if (!userId) {
+      respondFail(res, 401, "auth.credentialsMissing");
+      return;
+    }
+
+    const { placeId } = req.body;
+    const lat = parseFloat(req.body.lat);
+    const lng = parseFloat(req.body.lng);
+
+    if (!placeId) {
+      respondFail(res, 400, "place.idRequired");
+      return;
+    }
+    if (isNaN(lat) || isNaN(lng)) {
+      respondFail(res, 400, "match.latLngRequired");
+      return;
+    }
+
+    const result = await createCustomMatch({ userId, placeId, userLat: lat, userLng: lng });
+
+    res.status(201).json({ success: true, data: result });
+  } catch (error) {
+    respondWithError(res, error, "커스텀 매칭 생성");
   }
 }
 

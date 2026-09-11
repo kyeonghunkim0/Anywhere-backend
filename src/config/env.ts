@@ -26,6 +26,9 @@ export const env = {
   // 만료된 게스트 계정 정리 크론 스케줄 (기본: 매시 정각)
   GUEST_CLEANUP_CRON_SCHEDULE: process.env.GUEST_CLEANUP_CRON_SCHEDULE || "0 * * * *",
 
+  // 관리자 전용 API(예: 큐레이션 태그-관광지 연결) 인증키. x-admin-key 헤더와 비교합니다.
+  ADMIN_API_KEY: process.env.ADMIN_API_KEY || "",
+
   // 정적 파일(뱃지 아이콘 등)을 절대 URL로 내려줄 때 붙일 서버 공개 주소.
   // 예: https://api.anywhere.app · 로컬 개발은 http://localhost:3000
   PUBLIC_BASE_URL: process.env.PUBLIC_BASE_URL || "http://localhost:3000",
@@ -64,6 +67,9 @@ export function validateEnv(): void {
     }
     if (env.DATABASE_SSL && !env.DATABASE_CA_CERT) {
       throw new Error("❌ DATABASE_SSL=true이면 DATABASE_CA_CERT 경로가 필요합니다.");
+    }
+    if (!env.ADMIN_API_KEY) {
+      throw new Error("❌ 운영 환경에서는 ADMIN_API_KEY를 설정해야 관리자 API가 보호됩니다.");
     }
   }
 

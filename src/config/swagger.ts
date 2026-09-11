@@ -138,8 +138,15 @@ export const swaggerDocument: JsonObject = {
         properties: {
           id: { type: "string", example: "clxyz123abc" },
           nickname: { type: "string", example: "여행자" },
-          socialType: { type: "string", enum: ["apple", "google"] },
+          socialType: { type: "string", enum: ["apple", "google", "guest"] },
           totalStamps: { type: "integer", example: 5 },
+          isGuest: { type: "boolean", example: false },
+          guestExpiresAt: {
+            type: "string",
+            format: "date-time",
+            nullable: true,
+            description: "게스트 계정 만료 시각 (isGuest가 true일 때만 값이 있음)",
+          },
         },
       },
       Place: {
@@ -326,6 +333,109 @@ export const swaggerDocument: JsonObject = {
               "application/json": {
                 schema: { $ref: "#/components/schemas/Error" },
                 example: { success: false, message: "서버 오류가 발생했습니다." },
+              },
+            },
+          },
+        },
+      },
+    },
+    "/api/auth/guest": {
+      post: {
+        tags: ["Auth"],
+        summary: "게스트(비회원) 로그인",
+        description:
+          "deviceId 기준으로 게스트 계정에 로그인합니다. 신규 deviceId는 자동으로 게스트 계정이 생성되며, " +
+          "로그인할 때마다 만료 시각이 GUEST_EXPIRES_IN_HOURS(기본 24시간)만큼 연장됩니다. " +
+          "만료된 게스트 계정은 배치로 자동 삭제됩니다.",
+        requestBody: {
+          required: true,
+          content: {
+            "application/json": {
+              schema: {
+                type: "object",
+                required: ["deviceId"],
+                properties: {
+                  deviceId: {
+                    type: "string",
+                    description: "클라이언트가 생성해 보관하는 디바이스 UUID",
+                    example: "550e8400-e29b-41d4-a716-446655440000",
+                  },
+                  nickname: {
+                    type: "string",
+                    description: "(선택) 닉네임. 미입력 시 자동 생성",
+                    example: "게스트",
+                  },
+                },
+              },
+            },
+          },
+        },
+        responses: {
+          "200": { description: "기존 게스트 재로그인 성공(만료 시각 연장)" },
+          "201": { description: "신규 게스트 계정 생성 완료" },
+          "400": {
+            description: "deviceId 누락",
+            content: {
+              "application/json": {
+                schema: { $ref: "#/components/schemas/Error" },
+                example: { success: false, message: "deviceId는 필수입니다." },
+              },
+            },
+          },
+          "409": {
+            description: "이미 정회원으로 전환된 deviceId",
+            content: {
+              "application/json": {
+                schema: { $ref: "#/components/schemas/Error" },
+                example: { success: false, message: "이미 정회원으로 전환된 deviceId입니다." },
+              },
+            },
+          },
+        },
+      },
+    },
+    "/api/auth/guest/upgrade": {
+      post: {
+        tags: ["Auth"],
+        summary: "게스트 계정을 정회원으로 전환",
+        description:
+          "게스트 계정으로 로그인한 상태에서 Apple/Google 소셜 로그인을 연결해 같은 계정을 정회원으로 전환합니다. " +
+          "스탬프·매칭이력 등 기존 데이터는 그대로 유지됩니다.",
+        security: [{ BearerAuth: [] }],
+        requestBody: {
+          required: true,
+          content: {
+            "application/json": {
+              schema: {
+                type: "object",
+                required: ["socialType", "idToken"],
+                properties: {
+                  socialType: { type: "string", enum: ["apple", "google"] },
+                  idToken: { type: "string" },
+                  nickname: { type: "string", description: "(선택) 닉네임 변경" },
+                },
+              },
+            },
+          },
+        },
+        responses: {
+          "200": { description: "정회원 전환 완료" },
+          "400": {
+            description: "게스트 계정이 아니거나 필수 파라미터 누락",
+            content: {
+              "application/json": {
+                schema: { $ref: "#/components/schemas/Error" },
+                example: { success: false, message: "게스트 계정이 아닙니다." },
+              },
+            },
+          },
+          "401": { $ref: "#/components/responses/Unauthorized" },
+          "409": {
+            description: "해당 소셜 계정이 이미 다른 유저에 연결되어 있음",
+            content: {
+              "application/json": {
+                schema: { $ref: "#/components/schemas/Error" },
+                example: { success: false, message: "이미 다른 계정에 연결된 소셜 계정입니다." },
               },
             },
           },

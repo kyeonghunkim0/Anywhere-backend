@@ -17,21 +17,24 @@ datasource db {
 // 사용자 (Users Table)
 // ============================================
 model User {
-  id           String   @id @default(cuid())
-  nickname     String
-  socialType   String   // "apple" | "google"
-  socialId     String   @unique // 소셜 로그인 고유 ID
-  totalStamps  Int      @default(0)
-  profileImage String?
-  pushEnabled  Boolean  @default(true)
-  createdAt    DateTime @default(now())
-  updatedAt    DateTime @updatedAt
+  id             String    @id @default(cuid())
+  nickname       String
+  socialType     String    // "apple" | "google" | "guest"
+  socialId       String    @unique // 소셜 로그인 고유 ID (게스트는 클라이언트가 생성한 deviceId)
+  totalStamps    Int       @default(0)
+  profileImage   String?
+  pushEnabled    Boolean   @default(true)
+  isGuest        Boolean   @default(false) // 비회원(게스트) 계정 여부
+  guestExpiresAt DateTime? // 게스트 계정 만료 시각 — isGuest인 경우에만 사용, 정회원 전환 시 null
+  createdAt      DateTime  @default(now())
+  updatedAt      DateTime  @updatedAt
 
   stamps        UserStamp[]
   matchHistory  MatchHistory[]
   badges        UserBadge[]
   reviews       Review[]
 
+  @@index([isGuest, guestExpiresAt])
   @@map("users")
 }
 

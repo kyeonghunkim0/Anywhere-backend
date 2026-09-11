@@ -141,6 +141,48 @@ export const messages = {
     ja: "ログインに成功しました",
     zh: "登录成功",
   },
+  "auth.deviceIdRequired": {
+    ko: "deviceId는 필수입니다.",
+    en: "deviceId is required.",
+    ja: "deviceIdは必須です。",
+    zh: "deviceId 为必填项。",
+  },
+  "auth.guestSignupComplete": {
+    ko: "게스트 계정 생성 완료",
+    en: "Guest account created",
+    ja: "ゲストアカウントの作成が完了しました",
+    zh: "访客账号创建完成",
+  },
+  "auth.guestLoginSuccess": {
+    ko: "게스트 로그인 성공",
+    en: "Signed in as guest",
+    ja: "ゲストログインに成功しました",
+    zh: "访客登录成功",
+  },
+  "auth.deviceAlreadyLinked": {
+    ko: "이미 정회원으로 전환된 deviceId입니다.",
+    en: "This deviceId has already been upgraded to a full account.",
+    ja: "このdeviceIdはすでに正会員に切り替わっています。",
+    zh: "该 deviceId 已升级为正式会员账号。",
+  },
+  "auth.notGuestUser": {
+    ko: "게스트 계정이 아닙니다.",
+    en: "This account is not a guest account.",
+    ja: "ゲストアカウントではありません。",
+    zh: "该账号不是访客账号。",
+  },
+  "auth.socialAccountAlreadyLinked": {
+    ko: "이미 다른 계정에 연결된 소셜 계정입니다.",
+    en: "This social account is already linked to another account.",
+    ja: "すでに別のアカウントに連携済みのソーシャルアカウントです。",
+    zh: "该社交账号已绑定到另一个账号。",
+  },
+  "auth.guestUpgradeSuccess": {
+    ko: "정회원 전환 완료",
+    en: "Upgraded to a full account",
+    ja: "正会員への切り替えが完了しました",
+    zh: "已升级为正式会员",
+  },
 
   // ---------- 검색 ----------
   "search.queryRequired": {

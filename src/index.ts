@@ -21,6 +21,7 @@ import searchRoutes from "./routes/search.routes.js";
 import { notFoundHandler, errorHandler } from "./middlewares/error.middleware.js";
 import { localeMiddleware } from "./middlewares/locale.middleware.js";
 import { startSyncPlacesJob } from "./jobs/syncPlaces.job.js";
+import { startCleanupGuestsJob } from "./jobs/cleanupGuests.job.js";
 import { prisma } from "./utils/prisma.js";
 
 // 프로세스 타임존을 한국(KST)으로 고정합니다.
@@ -98,6 +99,7 @@ app.use(errorHandler);
 // 크론잡 등록
 // ============================================
 startSyncPlacesJob();
+startCleanupGuestsJob();
 
 // ============================================
 // 서버 시작

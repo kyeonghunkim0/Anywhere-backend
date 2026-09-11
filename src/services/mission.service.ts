@@ -36,7 +36,7 @@ interface CheckInResult {
     regionLevel: number; // 체크인 반영 후 지역 레벨
     regionLeveledUp: boolean; // 이번 체크인으로 지역이 레벨업했는지 여부
   };
-  newBadges?: EarnedBadge[]; // 이번 체크인으로 새로 획득한 로컬 히든 뱃지
+  newBadges?: EarnedBadge[]; // 이번 체크인으로 새로 획득한 로컬 히든 · 스페셜 퀘스트 뱃지
 }
 
 /**
@@ -144,13 +144,18 @@ export async function checkIn(input: CheckInInput): Promise<CheckInResult> {
   ]);
 
   // 7. 로컬 히든 퀘스트 뱃지 판정 (반경 내 마이크로 스팟 접근 시 자동 획득)
-  const newBadges = await awardHiddenBadges({
+  const hiddenBadges = await awardHiddenBadges({
     userId,
     userLat,
     userLng,
     placeId,
     regionId: place.regionId,
   });
+
+  // 7.5. 스페셜 퀘스트(시즌 한정) 뱃지 판정 (축제 기간 안에 해당 지역에서 체크인 시 자동 획득)
+  const seasonalBadges = await awardSeasonalBadges({ userId, regionId: place.regionId });
+
+  const newBadges = [...hiddenBadges, ...seasonalBadges];
 
   return {
     success: true,
@@ -227,6 +232,52 @@ async function awardHiddenBadges(input: {
     );
 
     if (!withinMicroSpot) continue;
+
+    await prisma.userBadge.create({
+      data: { userId, badgeId: badge.id },
+    });
+
+    earned.push({ id: badge.id, key: badge.key, name: badge.name, icon: badge.icon });
+  }
+
+  return earned;
+}
+
+/**
+ * 스페셜 퀘스트(SEASONAL) 뱃지 판정 — 해당 지역에 결부된 뱃지 중 지금이 축제 기간
+ * (startAt ~ endAt) 안이고 아직 획득하지 않은 뱃지를 자동으로 지급한다.
+ */
+async function awardSeasonalBadges(input: {
+  userId: string;
+  regionId: string;
+}): Promise<EarnedBadge[]> {
+  const { userId, regionId } = input;
+  const now = new Date();
+
+  const candidates = await prisma.badge.findMany({
+    where: {
+      type: "SEASONAL",
+      regionId,
+      startAt: { lte: now },
+      endAt: { gte: now },
+    },
+  });
+
+  if (candidates.length === 0) return [];
+
+  const alreadyEarned = new Set(
+    (
+      await prisma.userBadge.findMany({
+        where: { userId, badgeId: { in: candidates.map((b) => b.id) } },
+        select: { badgeId: true },
+      })
+    ).map((ub) => ub.badgeId)
+  );
+
+  const earned: EarnedBadge[] = [];
+
+  for (const badge of candidates) {
+    if (alreadyEarned.has(badge.id)) continue;
 
     await prisma.userBadge.create({
       data: { userId, badgeId: badge.id },

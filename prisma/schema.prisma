@@ -45,6 +45,8 @@ model Region {
   id            String  @id @default(cuid())
   sidoName      String  // 시·도명 (예: "서울특별시")
   sigunguName   String  // 시·군·구명 (예: "강남구")
+  sidoNameEn    String? // 시·도 영문명 (TourAPI EngService2, 예: "Seoul") - seedRegionNamesEn 스크립트가 채움
+  sigunguNameEn String? // 시·군·구 영문명 (예: "Gangnam-gu")
   areaCode      String  // TourAPI 시·도 코드
   sigunguCode   String  // TourAPI 시·군·구 코드
   isDepopulated Boolean @default(false) // 인구감소지역 여부

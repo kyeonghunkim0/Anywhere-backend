@@ -13,6 +13,7 @@
     "seed": "tsx prisma/seed.ts",
     "seed:gamification": "tsx prisma/seedGamification.ts",
     "seed:region-photos": "tsx prisma/seedRegionPhotos.ts",
+    "seed:region-names-en": "tsx prisma/seedRegionNamesEn.ts",
     "seed:test-places": "tsx prisma/seedTestPlaces.ts"
   },
   "keywords": [],

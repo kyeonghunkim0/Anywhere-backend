@@ -520,6 +520,73 @@ export const swaggerDocument: JsonObject = {
         },
       },
     },
+    "/api/match/custom": {
+      post: {
+        tags: ["Match"],
+        summary: "내 맘대로 떠나기 (직접 고른 관광지로 매칭 생성)",
+        description:
+          "랜덤 매칭(GET /api/match/random)을 거치지 않고, 유저가 검색·태그·카탈로그 등에서 직접 고른 " +
+          "관광지로 매칭 이력을 생성합니다. 응답 형태는 랜덤 매칭과 동일하며, " +
+          "반환된 matchId를 그대로 POST /api/match/{matchId}/confirm에 넘겨 여정을 확정합니다.\n\n" +
+          "- 하루 매칭 횟수 제한(20회)을 랜덤 매칭과 공유합니다\n" +
+          "- distanceKm는 요청한 lat/lng와 관광지 좌표 사이 직선 거리를 서버가 계산합니다",
+        security: [{ BearerAuth: [] }],
+        requestBody: {
+          required: true,
+          content: {
+            "application/json": {
+              schema: {
+                type: "object",
+                required: ["placeId", "lat", "lng"],
+                properties: {
+                  placeId: { type: "string", description: "유저가 직접 고른 관광지 ID" },
+                  lat: { type: "number", example: 37.5665, description: "현재 위도" },
+                  lng: { type: "number", example: 126.978, description: "현재 경도" },
+                },
+              },
+            },
+          },
+        },
+        responses: {
+          "201": {
+            description: "매칭 생성 성공",
+            content: {
+              "application/json": {
+                schema: {
+                  type: "object",
+                  properties: {
+                    success: { type: "boolean", example: true },
+                    data: {
+                      type: "object",
+                      properties: {
+                        matchId: {
+                          type: "string",
+                          description: "이 매칭을 확정(POST /api/match/{matchId}/confirm)할 때 사용",
+                        },
+                        place: { $ref: "#/components/schemas/Place" },
+                        region: { $ref: "#/components/schemas/Region" },
+                        matchInfo: { $ref: "#/components/schemas/MatchInfo" },
+                      },
+                    },
+                  },
+                },
+              },
+            },
+          },
+          "400": { description: "placeId 누락 또는 lat/lng 누락·유효하지 않음" },
+          "401": { description: "인증 필요" },
+          "404": { description: "존재하지 않는 관광지" },
+          "429": {
+            description: "일일 매칭 횟수 초과 (20회)",
+            content: {
+              "application/json": {
+                schema: { $ref: "#/components/schemas/Error" },
+              },
+            },
+          },
+        },
+      },
+    },
     "/api/match/current": {
       get: {
         tags: ["Match"],

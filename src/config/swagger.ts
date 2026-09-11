@@ -68,6 +68,12 @@ export const swaggerDocument: JsonObject = {
         bearerFormat: "JWT",
         description: "소셜 로그인 후 발급받은 JWT 토큰",
       },
+      AdminKeyAuth: {
+        type: "apiKey",
+        in: "header",
+        name: "x-admin-key",
+        description: "관리자 전용 API 인증키 (ADMIN_API_KEY 환경변수)",
+      },
     },
     // 모든 엔드포인트가 공유하는 실패 응답 (본문 형태는 Error 스키마로 동일)
     responses: {
@@ -853,6 +859,65 @@ export const swaggerDocument: JsonObject = {
         responses: {
           "200": { description: "조회 성공" },
           "400": { description: "lat/lng 중 하나만 넘겼거나 좌표 범위 초과" },
+        },
+      },
+      post: {
+        tags: ["Tags"],
+        summary: "(관리자) 태그-관광지 연결 추가",
+        description:
+          "큐레이션 태그는 관광지 데이터만으로 자동 판별할 수 없어 운영자가 수동으로 실제 관광지를 골라 태그에 연결합니다.",
+        security: [{ AdminKeyAuth: [] }],
+        parameters: [{ name: "tagId", in: "path", required: true, schema: { type: "string" } }],
+        requestBody: {
+          required: true,
+          content: {
+            "application/json": {
+              schema: {
+                type: "object",
+                required: ["placeId"],
+                properties: { placeId: { type: "string", description: "태그를 붙일 관광지 ID" } },
+              },
+            },
+          },
+        },
+        responses: {
+          "201": { description: "연결 완료" },
+          "400": { description: "placeId 누락" },
+          "401": {
+            description: "관리자 인증 실패 (x-admin-key 헤더 없음 또는 불일치)",
+            content: {
+              "application/json": {
+                schema: { $ref: "#/components/schemas/Error" },
+                example: { success: false, code: "admin.unauthorized", message: "관리자 인증에 실패했습니다." },
+              },
+            },
+          },
+          "404": { description: "존재하지 않는 태그 또는 관광지" },
+          "409": { description: "이미 연결된 태그-관광지 조합" },
+        },
+      },
+    },
+    "/api/tags/{tagId}/places/{placeId}": {
+      delete: {
+        tags: ["Tags"],
+        summary: "(관리자) 태그-관광지 연결 해제",
+        security: [{ AdminKeyAuth: [] }],
+        parameters: [
+          { name: "tagId", in: "path", required: true, schema: { type: "string" } },
+          { name: "placeId", in: "path", required: true, schema: { type: "string" } },
+        ],
+        responses: {
+          "200": { description: "연결 해제 완료" },
+          "401": {
+            description: "관리자 인증 실패",
+            content: {
+              "application/json": {
+                schema: { $ref: "#/components/schemas/Error" },
+                example: { success: false, code: "admin.unauthorized", message: "관리자 인증에 실패했습니다." },
+              },
+            },
+          },
+          "404": { description: "연결되어 있지 않은 태그-관광지 조합" },
         },
       },
     },

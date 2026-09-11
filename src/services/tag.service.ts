@@ -1,6 +1,8 @@
 import { prisma } from "../utils/prisma.js";
 import { formatRegionName } from "../utils/regionName.js";
 import { distanceToPlace, type Coords } from "../utils/coords.js";
+import { isPrismaErrorCode } from "../utils/prismaError.js";
+import { ConflictError, NotFoundError } from "../utils/errors.js";
 
 interface TagItem {
   id: string;
@@ -67,4 +69,36 @@ export async function getPlacesByTag(
     displayName: formatRegionName(place.region.sidoName, place.region.sigunguName),
     isDepopulated: place.region.isDepopulated,
   }));
+}
+
+/**
+ * (관리자) 태그-관광지 연결 추가
+ * 큐레이션 태그는 Place 데이터만으로는 자동 판별할 수 없어 운영자가 수동으로 큐레이션합니다.
+ */
+export async function attachPlaceTag(tagId: string, placeId: string): Promise<void> {
+  const [tag, place] = await Promise.all([
+    prisma.tag.findUnique({ where: { id: tagId } }),
+    prisma.place.findUnique({ where: { id: placeId } }),
+  ]);
+  if (!tag) throw new NotFoundError("tag.notFound");
+  if (!place) throw new NotFoundError("place.notFound");
+
+  try {
+    await prisma.placeTag.create({ data: { tagId, placeId } });
+  } catch (error) {
+    if (isPrismaErrorCode(error, "P2002")) throw new ConflictError("tag.alreadyLinked");
+    throw error;
+  }
+}
+
+/**
+ * (관리자) 태그-관광지 연결 해제
+ */
+export async function detachPlaceTag(tagId: string, placeId: string): Promise<void> {
+  try {
+    await prisma.placeTag.delete({ where: { placeId_tagId: { placeId, tagId } } });
+  } catch (error) {
+    if (isPrismaErrorCode(error, "P2025")) throw new NotFoundError("tag.linkNotFound");
+    throw error;
+  }
 }

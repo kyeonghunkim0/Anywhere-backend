@@ -333,11 +333,43 @@ export const messages = {
     ja: "存在しない観光地です。",
     zh: "该景点不存在。",
   },
+  "place.idRequired": {
+    ko: "placeId는 필수입니다.",
+    en: "placeId is required.",
+    ja: "placeIdは必須です。",
+    zh: "placeId 为必填项。",
+  },
+  "tag.notFound": {
+    ko: "존재하지 않는 태그입니다.",
+    en: "This tag does not exist.",
+    ja: "存在しないタグです。",
+    zh: "该标签不存在。",
+  },
+  "tag.alreadyLinked": {
+    ko: "이미 해당 태그가 연결된 관광지입니다.",
+    en: "This attraction is already linked to the tag.",
+    ja: "すでにこのタグが連携済みの観光地です。",
+    zh: "该景点已关联此标签。",
+  },
+  "tag.linkNotFound": {
+    ko: "연결되어 있지 않은 태그-관광지 조합입니다.",
+    en: "This tag is not linked to the given attraction.",
+    ja: "連携されていないタグと観光地の組み合わせです。",
+    zh: "该标签与景点尚未关联。",
+  },
   "region.notFound": {
     ko: "존재하지 않는 지역입니다.",
     en: "This region does not exist.",
     ja: "存在しない地域です。",
     zh: "该地区不存在。",
+  },
+
+  // ---------- 관리자 ----------
+  "admin.unauthorized": {
+    ko: "관리자 인증에 실패했습니다. x-admin-key 헤더를 확인해주세요.",
+    en: "Admin authentication failed. Please check the x-admin-key header.",
+    ja: "管理者認証に失敗しました。x-admin-keyヘッダーを確認してください。",
+    zh: "管理员认证失败，请检查 x-admin-key 请求头。",
   },
 } satisfies Record<string, Entry>;
 

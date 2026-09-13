@@ -1267,7 +1267,9 @@ export const swaggerDocument: JsonObject = {
           "지역은 regionLimit/regionOffset으로 따로 페이징합니다. " +
           "regionGroup으로 권역(수도권·충청·전라·경상·강원·제주)을 지정하면 지역·관광지 결과에 함께 적용됩니다. " +
           "q를 생략하거나 빈 값으로 보내면 검색 대신 추천 목록(장소 카탈로그)을 places에 담아 주고 regions는 빈 페이지가 됩니다. " +
-          "lat/lng를 함께 넘기면 관광지별 distanceKm를 서버가 계산합니다. (인증 불필요)",
+          "lat/lng를 함께 넘기면 관광지별 distanceKm를 서버가 계산합니다. " +
+          "festivals에는 이름·설명에 검색어가 걸리는 스페셜 퀘스트(시즌 한정 뱃지)가 최대 20건 담기며, " +
+          "진행 전/중/종료 여부를 status(UPCOMING/ACTIVE/EXPIRED)로 구분합니다. (인증 불필요)",
         parameters: [
           {
             name: "q",

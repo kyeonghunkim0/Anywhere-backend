@@ -59,6 +59,7 @@ export const swaggerDocument: JsonObject = {
     { name: "Regions", description: "지역 로컬 성장 게이지" },
     { name: "Users", description: "유저 프로필 / 설정 / 랭커 상세" },
     { name: "App", description: "앱 정보 (버전 / 점검 상태)" },
+    { name: "Home", description: "홈 화면 진입용 통합 조회" },
   ],
   components: {
     securitySchemes: {
@@ -67,6 +68,12 @@ export const swaggerDocument: JsonObject = {
         scheme: "bearer",
         bearerFormat: "JWT",
         description: "소셜 로그인 후 발급받은 JWT 토큰",
+      },
+      AdminKeyAuth: {
+        type: "apiKey",
+        in: "header",
+        name: "x-admin-key",
+        description: "관리자 전용 API 인증키 (ADMIN_API_KEY 환경변수)",
       },
     },
     // 모든 엔드포인트가 공유하는 실패 응답 (본문 형태는 Error 스키마로 동일)
@@ -138,8 +145,15 @@ export const swaggerDocument: JsonObject = {
         properties: {
           id: { type: "string", example: "clxyz123abc" },
           nickname: { type: "string", example: "여행자" },
-          socialType: { type: "string", enum: ["apple", "google"] },
+          socialType: { type: "string", enum: ["apple", "google", "guest"] },
           totalStamps: { type: "integer", example: 5 },
+          isGuest: { type: "boolean", example: false },
+          guestExpiresAt: {
+            type: "string",
+            format: "date-time",
+            nullable: true,
+            description: "게스트 계정 만료 시각 (isGuest가 true일 때만 값이 있음)",
+          },
         },
       },
       Place: {
@@ -152,6 +166,16 @@ export const swaggerDocument: JsonObject = {
           mapX: { type: "number", example: 126.977 },
           mapY: { type: "number", example: 37.579 },
           distanceKm: { type: "number", example: 3.2 },
+          latestReview: {
+            type: "object",
+            nullable: true,
+            description: "이 장소에 달린 가장 최신 후기 (없으면 null)",
+            properties: {
+              content: { type: "string", example: "저녁에 산책하기 정말 좋아요." },
+              nickname: { type: "string", example: "여행자" },
+              createdAt: { type: "string", format: "date-time" },
+            },
+          },
         },
       },
       Region: {
@@ -332,6 +356,109 @@ export const swaggerDocument: JsonObject = {
         },
       },
     },
+    "/api/auth/guest": {
+      post: {
+        tags: ["Auth"],
+        summary: "게스트(비회원) 로그인",
+        description:
+          "deviceId 기준으로 게스트 계정에 로그인합니다. 신규 deviceId는 자동으로 게스트 계정이 생성되며, " +
+          "로그인할 때마다 만료 시각이 GUEST_EXPIRES_IN_HOURS(기본 24시간)만큼 연장됩니다. " +
+          "만료된 게스트 계정은 배치로 자동 삭제됩니다.",
+        requestBody: {
+          required: true,
+          content: {
+            "application/json": {
+              schema: {
+                type: "object",
+                required: ["deviceId"],
+                properties: {
+                  deviceId: {
+                    type: "string",
+                    description: "클라이언트가 생성해 보관하는 디바이스 UUID",
+                    example: "550e8400-e29b-41d4-a716-446655440000",
+                  },
+                  nickname: {
+                    type: "string",
+                    description: "(선택) 닉네임. 미입력 시 자동 생성",
+                    example: "게스트",
+                  },
+                },
+              },
+            },
+          },
+        },
+        responses: {
+          "200": { description: "기존 게스트 재로그인 성공(만료 시각 연장)" },
+          "201": { description: "신규 게스트 계정 생성 완료" },
+          "400": {
+            description: "deviceId 누락",
+            content: {
+              "application/json": {
+                schema: { $ref: "#/components/schemas/Error" },
+                example: { success: false, message: "deviceId는 필수입니다." },
+              },
+            },
+          },
+          "409": {
+            description: "이미 정회원으로 전환된 deviceId",
+            content: {
+              "application/json": {
+                schema: { $ref: "#/components/schemas/Error" },
+                example: { success: false, message: "이미 정회원으로 전환된 deviceId입니다." },
+              },
+            },
+          },
+        },
+      },
+    },
+    "/api/auth/guest/upgrade": {
+      post: {
+        tags: ["Auth"],
+        summary: "게스트 계정을 정회원으로 전환",
+        description:
+          "게스트 계정으로 로그인한 상태에서 Apple/Google 소셜 로그인을 연결해 같은 계정을 정회원으로 전환합니다. " +
+          "스탬프·매칭이력 등 기존 데이터는 그대로 유지됩니다.",
+        security: [{ BearerAuth: [] }],
+        requestBody: {
+          required: true,
+          content: {
+            "application/json": {
+              schema: {
+                type: "object",
+                required: ["socialType", "idToken"],
+                properties: {
+                  socialType: { type: "string", enum: ["apple", "google"] },
+                  idToken: { type: "string" },
+                  nickname: { type: "string", description: "(선택) 닉네임 변경" },
+                },
+              },
+            },
+          },
+        },
+        responses: {
+          "200": { description: "정회원 전환 완료" },
+          "400": {
+            description: "게스트 계정이 아니거나 필수 파라미터 누락",
+            content: {
+              "application/json": {
+                schema: { $ref: "#/components/schemas/Error" },
+                example: { success: false, message: "게스트 계정이 아닙니다." },
+              },
+            },
+          },
+          "401": { $ref: "#/components/responses/Unauthorized" },
+          "409": {
+            description: "해당 소셜 계정이 이미 다른 유저에 연결되어 있음",
+            content: {
+              "application/json": {
+                schema: { $ref: "#/components/schemas/Error" },
+                example: { success: false, message: "이미 다른 계정에 연결된 소셜 계정입니다." },
+              },
+            },
+          },
+        },
+      },
+    },
     "/api/match/random": {
       get: {
         tags: ["Match"],
@@ -393,6 +520,73 @@ export const swaggerDocument: JsonObject = {
           },
           "401": { description: "인증 필요" },
           "404": { description: "주변에 매칭 가능한 관광지 없음" },
+          "429": {
+            description: "일일 매칭 횟수 초과 (20회)",
+            content: {
+              "application/json": {
+                schema: { $ref: "#/components/schemas/Error" },
+              },
+            },
+          },
+        },
+      },
+    },
+    "/api/match/custom": {
+      post: {
+        tags: ["Match"],
+        summary: "내 맘대로 떠나기 (직접 고른 관광지로 매칭 생성)",
+        description:
+          "랜덤 매칭(GET /api/match/random)을 거치지 않고, 유저가 검색·태그·카탈로그 등에서 직접 고른 " +
+          "관광지로 매칭 이력을 생성합니다. 응답 형태는 랜덤 매칭과 동일하며, " +
+          "반환된 matchId를 그대로 POST /api/match/{matchId}/confirm에 넘겨 여정을 확정합니다.\n\n" +
+          "- 하루 매칭 횟수 제한(20회)을 랜덤 매칭과 공유합니다\n" +
+          "- distanceKm는 요청한 lat/lng와 관광지 좌표 사이 직선 거리를 서버가 계산합니다",
+        security: [{ BearerAuth: [] }],
+        requestBody: {
+          required: true,
+          content: {
+            "application/json": {
+              schema: {
+                type: "object",
+                required: ["placeId", "lat", "lng"],
+                properties: {
+                  placeId: { type: "string", description: "유저가 직접 고른 관광지 ID" },
+                  lat: { type: "number", example: 37.5665, description: "현재 위도" },
+                  lng: { type: "number", example: 126.978, description: "현재 경도" },
+                },
+              },
+            },
+          },
+        },
+        responses: {
+          "201": {
+            description: "매칭 생성 성공",
+            content: {
+              "application/json": {
+                schema: {
+                  type: "object",
+                  properties: {
+                    success: { type: "boolean", example: true },
+                    data: {
+                      type: "object",
+                      properties: {
+                        matchId: {
+                          type: "string",
+                          description: "이 매칭을 확정(POST /api/match/{matchId}/confirm)할 때 사용",
+                        },
+                        place: { $ref: "#/components/schemas/Place" },
+                        region: { $ref: "#/components/schemas/Region" },
+                        matchInfo: { $ref: "#/components/schemas/MatchInfo" },
+                      },
+                    },
+                  },
+                },
+              },
+            },
+          },
+          "400": { description: "placeId 누락 또는 lat/lng 누락·유효하지 않음" },
+          "401": { description: "인증 필요" },
+          "404": { description: "존재하지 않는 관광지" },
           "429": {
             description: "일일 매칭 횟수 초과 (20회)",
             content: {
@@ -733,11 +927,105 @@ export const swaggerDocument: JsonObject = {
       get: {
         tags: ["Tags"],
         summary: "해시태그별 관광지 목록",
+        description:
+          "각 관광지의 좌표(mapX/mapY)를 포함합니다. lat/lng를 함께 넘기면 관광지별 distanceKm(km, 소수 1자리)를 서버가 계산해 실어 줍니다.",
         parameters: [
           { name: "tagId", in: "path", required: true, schema: { type: "string" } },
+          { name: "lat", in: "query", required: false, schema: { type: "number" }, description: "사용자 위도 (lng와 함께)" },
+          { name: "lng", in: "query", required: false, schema: { type: "number" }, description: "사용자 경도 (lat와 함께)" },
         ],
         responses: {
           "200": { description: "조회 성공" },
+          "400": { description: "lat/lng 중 하나만 넘겼거나 좌표 범위 초과" },
+        },
+      },
+      post: {
+        tags: ["Tags"],
+        summary: "(관리자) 태그-관광지 연결 추가",
+        description:
+          "큐레이션 태그는 관광지 데이터만으로 자동 판별할 수 없어 운영자가 수동으로 실제 관광지를 골라 태그에 연결합니다.",
+        security: [{ AdminKeyAuth: [] }],
+        parameters: [{ name: "tagId", in: "path", required: true, schema: { type: "string" } }],
+        requestBody: {
+          required: true,
+          content: {
+            "application/json": {
+              schema: {
+                type: "object",
+                required: ["placeId"],
+                properties: { placeId: { type: "string", description: "태그를 붙일 관광지 ID" } },
+              },
+            },
+          },
+        },
+        responses: {
+          "201": { description: "연결 완료" },
+          "400": { description: "placeId 누락" },
+          "401": {
+            description: "관리자 인증 실패 (x-admin-key 헤더 없음 또는 불일치)",
+            content: {
+              "application/json": {
+                schema: { $ref: "#/components/schemas/Error" },
+                example: { success: false, code: "admin.unauthorized", message: "관리자 인증에 실패했습니다." },
+              },
+            },
+          },
+          "404": { description: "존재하지 않는 태그 또는 관광지" },
+          "409": { description: "이미 연결된 태그-관광지 조합" },
+        },
+      },
+    },
+    "/api/tags/{tagId}/places/{placeId}": {
+      delete: {
+        tags: ["Tags"],
+        summary: "(관리자) 태그-관광지 연결 해제",
+        security: [{ AdminKeyAuth: [] }],
+        parameters: [
+          { name: "tagId", in: "path", required: true, schema: { type: "string" } },
+          { name: "placeId", in: "path", required: true, schema: { type: "string" } },
+        ],
+        responses: {
+          "200": { description: "연결 해제 완료" },
+          "401": {
+            description: "관리자 인증 실패",
+            content: {
+              "application/json": {
+                schema: { $ref: "#/components/schemas/Error" },
+                example: { success: false, code: "admin.unauthorized", message: "관리자 인증에 실패했습니다." },
+              },
+            },
+          },
+          "404": { description: "연결되어 있지 않은 태그-관광지 조합" },
+        },
+      },
+    },
+    "/api/places": {
+      get: {
+        tags: ["Places"],
+        summary: "장소 카탈로그 (검색어 없을 때의 추천 목록)",
+        description:
+          "검색·발견 대상 장소 목록입니다. 특별·광역시 자치구는 제외(시·군 단위만), " +
+          "인구감소지역 → 도장 수 → 이름 순으로 정렬합니다. " +
+          "depopulated=true면 인구감소지역만, regionGroup으로 권역 필터, " +
+          "lat/lng를 함께 넘기면 장소별 distanceKm를 서버가 계산합니다. " +
+          "각 장소의 region.activeFestivals에는 지금 그 지역에서 진행 중인 스페셜 퀘스트(축제) 뱃지가 담깁니다. (인증 불필요)",
+        parameters: [
+          { name: "depopulated", in: "query", required: false, schema: { type: "boolean" }, description: "true면 인구감소지역만" },
+          {
+            name: "regionGroup",
+            in: "query",
+            required: false,
+            schema: { type: "string", enum: ["수도권", "충청", "전라", "경상", "강원", "제주"] },
+            description: "권역 칩 필터. 생략 또는 '전지역'이면 전체",
+          },
+          { name: "limit", in: "query", required: false, schema: { type: "integer", default: 20, minimum: 1, maximum: 50 } },
+          { name: "offset", in: "query", required: false, schema: { type: "integer", default: 0, minimum: 0 } },
+          { name: "lat", in: "query", required: false, schema: { type: "number" }, description: "사용자 위도 (lng와 함께)" },
+          { name: "lng", in: "query", required: false, schema: { type: "number" }, description: "사용자 경도 (lat와 함께)" },
+        ],
+        responses: {
+          "200": { description: "조회 성공" },
+          "400": { description: "잘못된 limit/offset·regionGroup·좌표" },
         },
       },
     },
@@ -746,7 +1034,8 @@ export const swaggerDocument: JsonObject = {
         tags: ["Places"],
         summary: "장소 상세",
         description:
-          "placeId 단건으로 장소 상세를 조회합니다. 이름·주소·좌표(mapX/mapY)·지역(displayName)·태그·방문자 수와 최신 후기(reviews)를 한 번에 반환합니다.",
+          "placeId 단건으로 장소 상세를 조회합니다. 이름·주소·좌표(mapX/mapY)·지역(displayName)·태그·방문자 수와 최신 후기(reviews)를 한 번에 반환합니다. " +
+          "region.activeFestivals에는 지금 그 지역에서 진행 중인 스페셜 퀘스트(축제) 뱃지가 담깁니다.",
         parameters: [
           { name: "placeId", in: "path", required: true, schema: { type: "string" } },
           { name: "reviewLimit", in: "query", required: false, schema: { type: "integer", default: 20 } },
@@ -779,6 +1068,22 @@ export const swaggerDocument: JsonObject = {
         description: "홈 화면 [스페셜 퀘스트] 캐러셀에 노출되는 활성 시즌 한정 뱃지 목록입니다.",
         responses: {
           "200": { description: "조회 성공" },
+        },
+      },
+    },
+    "/api/home": {
+      get: {
+        tags: ["Home"],
+        summary: "홈 화면 통합 조회",
+        description:
+          "홈 진입 시 필요한 데이터를 한 번에 반환합니다 (currentTrip · seasonalBadges · growthRegions · sectionVisibility).\n\n" +
+          "- sectionVisibility.specialQuests / trendingLocal: 운영자가 수동으로 끈 섹션은 false. " +
+          "false인 섹션은 데이터가 채워져 와도 클라이언트가 무조건 숨겨야 합니다 (enabled && !isEmpty로 결합).\n" +
+          "- 클라이언트가 모르는 sectionVisibility 키는 무시하도록 설계되어 있어 섹션이 추가돼도 하위 호환됩니다.",
+        security: [{ BearerAuth: [] }],
+        responses: {
+          "200": { description: "조회 성공" },
+          "401": { description: "인증 필요" },
         },
       },
     },
@@ -987,15 +1292,21 @@ export const swaggerDocument: JsonObject = {
           "특별·광역시 자치구는 결과에서 제외되며(시·군 단위만), " +
           "관광지는 이름 일치 우선(정확 → 접두 → 포함 → 주소) 정렬 후 limit/offset으로 페이징합니다. " +
           "지역은 regionLimit/regionOffset으로 따로 페이징합니다. " +
-          "regionGroup으로 권역(수도권·충청·전라·경상·강원·제주)을 지정하면 지역·관광지 결과에 함께 적용됩니다. (인증 불필요)",
+          "regionGroup으로 권역(수도권·충청·전라·경상·강원·제주)을 지정하면 지역·관광지 결과에 함께 적용됩니다. " +
+          "q를 생략하거나 빈 값으로 보내면 검색 대신 추천 목록(장소 카탈로그)을 places에 담아 주고 regions는 빈 페이지가 됩니다. " +
+          "lat/lng를 함께 넘기면 관광지별 distanceKm를 서버가 계산합니다. " +
+          "festivals에는 이름·설명에 검색어가 걸리는 스페셜 퀘스트(시즌 한정 뱃지)가 최대 20건 담기며, " +
+          "진행 전/중/종료 여부를 status(UPCOMING/ACTIVE/EXPIRED)로 구분합니다. (인증 불필요)",
         parameters: [
           {
             name: "q",
             in: "query",
-            required: true,
+            required: false,
             schema: { type: "string" },
-            description: "검색어 (예: 포항, 해수욕장, 강릉 카페)",
+            description: "검색어 (예: 포항, 해수욕장, 강릉 카페). 생략 시 추천 목록 반환",
           },
+          { name: "lat", in: "query", required: false, schema: { type: "number" }, description: "사용자 위도 (lng와 함께)" },
+          { name: "lng", in: "query", required: false, schema: { type: "number" }, description: "사용자 경도 (lat와 함께)" },
           {
             name: "limit",
             in: "query",
@@ -1088,6 +1399,7 @@ export const swaggerDocument: JsonObject = {
                                   mapX: { type: "number" },
                                   mapY: { type: "number" },
                                   stampCount: { type: "integer" },
+                                  distanceKm: { type: "number", nullable: true, example: 3.2 },
                                   region: {
                                     type: "object",
                                     properties: {

@@ -136,22 +136,7 @@ async function main(): Promise<void> {
     ],
   });
 
-  // 6) 히든/지역 보상 뱃지 샘플 추가 후 지급
-  const hiddenBadge = await prisma.badge.upsert({
-    where: { key: "test_hidden_spot_1" },
-    update: {},
-    create: {
-      key: "test_hidden_spot_1",
-      name: "골목 탐정",
-      description: "테스트 시장 근처 숨겨진 마이크로 스팟에서 발견되는 히든 뱃지입니다.",
-      icon: "detective",
-      type: "HIDDEN",
-      lat: place2.mapY,
-      lng: place2.mapX,
-      radiusM: 20,
-      placeId: place2.id,
-    },
-  });
+  // 6) 지역 보상 뱃지 샘플 추가 후 지급
   const regionBadge = await prisma.badge.upsert({
     where: { key: "test_region_reward_1" },
     update: {},
@@ -163,11 +148,6 @@ async function main(): Promise<void> {
       type: "REGION",
       regionId: regionA.id,
     },
-  });
-  await prisma.userBadge.upsert({
-    where: { userId_badgeId: { userId: targetUser.id, badgeId: hiddenBadge.id } },
-    update: {},
-    create: { userId: targetUser.id, badgeId: hiddenBadge.id },
   });
   await prisma.userBadge.upsert({
     where: { userId_badgeId: { userId: targetUser.id, badgeId: regionBadge.id } },
@@ -186,7 +166,7 @@ async function main(): Promise<void> {
   // "summer_2026_watermelon_beach"는 지급하지 않아 status: "AVAILABLE" 케이스로 남겨둔다
 
   console.log(`✅ 테스트 계정(${targetUser.nickname}) 목데이터 시딩 완료!`);
-  console.log(`- 관광지 ${places.length}개, 도장 3개, 매칭이력 4건, 후기 2건, 뱃지 지급 3건(스페셜 퀘스트 1건 포함)`);
+  console.log(`- 관광지 ${places.length}개, 도장 3개, 매칭이력 4건, 후기 2건, 뱃지 지급 2건(스페셜 퀘스트 1건 포함)`);
   console.log(`- 지역: ${regionA.sigunguName}(인구감소) / ${regionB.sigunguName}(인구감소) / ${regionC.sigunguName}(일반)`);
 }
 

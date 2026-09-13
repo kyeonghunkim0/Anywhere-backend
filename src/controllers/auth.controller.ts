@@ -1,6 +1,7 @@
 import { Request, Response } from "express";
-import { loginWithSocial } from "../services/auth.service.js";
+import { loginWithSocial, loginAsGuest, upgradeGuestToSocial } from "../services/auth.service.js";
 import { respondWithError, respondFail, localize } from "../middlewares/error.middleware.js";
+import { AuthRequest } from "../middlewares/auth.middleware.js";
 
 /**
  * POST /api/auth/login
@@ -43,5 +44,87 @@ export async function loginController(req: Request, res: Response): Promise<void
     });
   } catch (error) {
     respondWithError(res, error, "로그인");
+  }
+}
+
+/**
+ * POST /api/auth/guest
+ *
+ * Request Body:
+ * {
+ *   "deviceId": "필수 — 클라이언트가 생성해 보관하는 디바이스 UUID",
+ *   "nickname": "(선택) 닉네임"
+ * }
+ */
+export async function guestLoginController(req: Request, res: Response): Promise<void> {
+  try {
+    const { deviceId, nickname } = req.body;
+
+    if (!deviceId) {
+      respondFail(res, 400, "auth.deviceIdRequired");
+      return;
+    }
+
+    const result = await loginAsGuest({ deviceId, nickname });
+
+    res.status(result.isNewUser ? 201 : 200).json({
+      success: true,
+      message: localize(res, result.isNewUser ? "auth.guestSignupComplete" : "auth.guestLoginSuccess"),
+      data: {
+        token: result.token,
+        user: result.user,
+      },
+    });
+  } catch (error) {
+    respondWithError(res, error, "게스트 로그인");
+  }
+}
+
+/**
+ * POST /api/auth/guest/upgrade (인증 필요 — 게스트 계정으로 로그인한 토큰)
+ *
+ * Request Body:
+ * {
+ *   "socialType": "apple" | "google",
+ *   "idToken": "필수",
+ *   "nickname": "(선택) 닉네임"
+ * }
+ */
+export async function upgradeGuestController(req: AuthRequest, res: Response): Promise<void> {
+  try {
+    const { socialType, idToken, nickname } = req.body;
+
+    if (!socialType) {
+      respondFail(res, 400, "auth.socialTypeRequired");
+      return;
+    }
+
+    if (!["apple", "google"].includes(socialType)) {
+      respondFail(res, 400, "auth.socialTypeInvalid");
+      return;
+    }
+
+    if (!idToken) {
+      respondFail(res, 400, "auth.idTokenRequired");
+      return;
+    }
+
+    const result = await upgradeGuestToSocial({
+      guestUserId: req.user!.userId,
+      socialType,
+      idToken,
+      nickname,
+    });
+
+    res.json({
+      success: true,
+      message: localize(res, "auth.guestUpgradeSuccess"),
+      data: {
+        token: result.token,
+        user: result.user,
+      },
+    });
+  } catch (error) {
+    respondWithError(res, error, "게스트 계정 전환");
   }
 }

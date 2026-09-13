@@ -3,6 +3,19 @@ import { haversineDistance } from "../utils/haversine.js";
 import { NotFoundError, RateLimitError, ValidationError } from "../utils/errors.js";
 import { formatRegionName } from "../utils/regionName.js";
 import { CITY_COUNTY_ONLY } from "../utils/regionFilter.js";
+import { getReviewsByPlace } from "./review.service.js";
+
+interface LatestReview {
+  content: string;
+  nickname: string;
+  createdAt: Date;
+}
+
+/** 장소의 가장 최신 후기 한 건 (없으면 null) */
+async function getLatestReview(placeId: string): Promise<LatestReview | null> {
+  const [latest] = await getReviewsByPlace(placeId, 1);
+  return latest ? { content: latest.content, nickname: latest.nickname, createdAt: latest.createdAt } : null;
+}
 
 const MAX_DAILY_MATCHES = 20;
 
@@ -24,6 +37,7 @@ interface MatchResult {
     mapX: number;
     mapY: number;
     distanceKm: number;
+    latestReview: LatestReview | null; // 이 장소에 달린 가장 최신 후기
   };
   region: {
     id: string;
@@ -107,6 +121,7 @@ export async function getRandomMatch(input: MatchInput): Promise<MatchResult | n
   });
 
   const remainingMatches = MAX_DAILY_MATCHES - todayCount - 1;
+  const latestReview = await getLatestReview(selected.id);
 
   return {
     matchId: matchHistory.id,
@@ -118,6 +133,7 @@ export async function getRandomMatch(input: MatchInput): Promise<MatchResult | n
       mapX: selected.mapX,
       mapY: selected.mapY,
       distanceKm: Math.round(selected.distanceKm * 10) / 10,
+      latestReview,
     },
     region: {
       id: selected.region.id,
@@ -130,6 +146,70 @@ export async function getRandomMatch(input: MatchInput): Promise<MatchResult | n
     matchInfo: {
       remainingMatches,
       isDepopulatedBonus: selected.region.isDepopulated,
+    },
+  };
+}
+
+interface CustomMatchInput {
+  userId: string;
+  placeId: string;
+  userLat: number;
+  userLng: number;
+}
+
+/**
+ * "내 맘대로 떠나기" - 랜덤 매칭을 거치지 않고 유저가 직접 고른 관광지로 매칭 이력을 생성
+ * 반환 형태는 getRandomMatch와 동일하며, 이후 동일한 POST /:matchId/confirm으로 확정한다.
+ * (일일 매칭 횟수 제한도 랜덤 매칭과 동일하게 공유해서 적용된다)
+ */
+export async function createCustomMatch(input: CustomMatchInput): Promise<MatchResult> {
+  const { userId, placeId, userLat, userLng } = input;
+
+  const todayCount = await getTodayMatchCount(userId);
+  if (todayCount >= MAX_DAILY_MATCHES) {
+    throw new MatchLimitExceededError(MAX_DAILY_MATCHES);
+  }
+
+  const place = await prisma.place.findUnique({
+    where: { id: placeId },
+    include: { region: true },
+  });
+  if (!place) {
+    throw new NotFoundError("place.notFound");
+  }
+
+  const distanceKm = Math.round(haversineDistance(userLat, userLng, place.mapY, place.mapX) * 10) / 10;
+
+  const matchHistory = await prisma.matchHistory.create({
+    data: { userId, placeId: place.id, distanceKm },
+  });
+
+  const remainingMatches = MAX_DAILY_MATCHES - todayCount - 1;
+  const latestReview = await getLatestReview(place.id);
+
+  return {
+    matchId: matchHistory.id,
+    place: {
+      id: place.id,
+      name: place.name,
+      address: place.address,
+      thumbnail: place.thumbnail,
+      mapX: place.mapX,
+      mapY: place.mapY,
+      distanceKm,
+      latestReview,
+    },
+    region: {
+      id: place.region.id,
+      sidoName: place.region.sidoName,
+      sigunguName: place.region.sigunguName,
+      displayName: formatRegionName(place.region.sidoName, place.region.sigunguName),
+      isDepopulated: place.region.isDepopulated,
+      imageUrl: place.region.imageUrl,
+    },
+    matchInfo: {
+      remainingMatches,
+      isDepopulatedBonus: place.region.isDepopulated,
     },
   };
 }
@@ -218,6 +298,7 @@ interface CurrentTripResult {
     thumbnail: string | null;
     mapX: number;
     mapY: number;
+    latestReview: LatestReview | null; // 이 장소에 달린 가장 최신 후기
   };
   region: {
     id: string;
@@ -229,7 +310,7 @@ interface CurrentTripResult {
   };
 }
 
-function toCurrentTrip(
+async function toCurrentTrip(
   matchHistory: {
     id: string;
     distanceKm: number;
@@ -250,7 +331,9 @@ function toCurrentTrip(
       };
     };
   }
-): CurrentTripResult {
+): Promise<CurrentTripResult> {
+  const latestReview = await getLatestReview(matchHistory.place.id);
+
   return {
     matchId: matchHistory.id,
     distanceKm: matchHistory.distanceKm,
@@ -262,6 +345,7 @@ function toCurrentTrip(
       thumbnail: matchHistory.place.thumbnail,
       mapX: matchHistory.place.mapX,
       mapY: matchHistory.place.mapY,
+      latestReview,
     },
     // region은 Prisma 객체를 그대로 넘기지 않고 필요한 필드만 추립니다
     // (imageCredit 등 클라이언트에 불필요한 컬럼이 새어나가지 않도록)

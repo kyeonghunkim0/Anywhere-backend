@@ -1,9 +1,14 @@
 import type { Prisma } from "../generated/prisma/client.js";
 import { prisma } from "../utils/prisma.js";
-import { ValidationError } from "../utils/errors.js";
 import { formatRegionName } from "../utils/regionName.js";
 import { CITY_COUNTY_ONLY } from "../utils/regionFilter.js";
 import { regionGroupWhere } from "../utils/regionGroup.js";
+import { distanceToPlace, type Coords } from "../utils/coords.js";
+import { toPublicAssetUrl } from "../utils/assetUrl.js";
+import { listPlaces } from "./place.service.js";
+
+/** 검색 결과에 얹을 스페셜 퀘스트(축제) 후보 상한 */
+const FESTIVAL_CANDIDATE_CAP = 20;
 
 // ============================================
 // 통합 검색 (관광지 이름·주소 / 지역 이름)
@@ -37,6 +42,7 @@ interface SearchPlaceItem {
   mapX: number; // 경도
   mapY: number; // 위도
   stampCount: number;
+  distanceKm: number | null; // 좌표(lat/lng)를 넘겼을 때만 채워진다
   region: SearchPlaceRegion;
 }
 
@@ -47,10 +53,24 @@ interface SearchPage<T> {
   items: T[];
 }
 
+interface SearchFestivalItem {
+  id: string;
+  key: string;
+  name: string;
+  description: string;
+  icon: string;
+  status: "UPCOMING" | "ACTIVE" | "EXPIRED";
+  startAt: Date | null;
+  endAt: Date | null;
+  daysRemaining: number | null; // 마감까지 D-day (음수면 마감, 시작 전이면 시작까지 남은 일수)
+  region: SearchPlaceRegion | null;
+}
+
 interface SearchResult {
   query: string;
   regions: SearchPage<SearchRegionItem>;
   places: SearchPage<SearchPlaceItem>;
+  festivals: SearchFestivalItem[]; // 이름·설명에 검색어가 걸리는 스페셜 퀘스트(시즌 한정 뱃지)
 }
 
 /**
@@ -59,6 +79,9 @@ interface SearchResult {
  * - 특별·광역시 자치구는 결과에서 제외한다 (시·군 단위만).
  * - 관광지는 "이름이 키워드로 시작 → 이름에 포함 → 주소에만 포함" 순으로 정렬한 뒤
  *   limit/offset으로 잘라 내려준다.
+ * - 검색어(q)가 비면 검색 대신 "추천 목록"(listPlaces)을 places에 담아 돌려준다.
+ *   이때 regions는 빈 페이지다.
+ * - coords(lat/lng)를 넘기면 각 관광지까지의 distanceKm를 서버에서 계산한다.
  */
 export async function search(
   rawQuery: string,
@@ -66,11 +89,20 @@ export async function search(
   offset: number = 0,
   regionLimit: number = 20,
   regionOffset: number = 0,
-  regionGroup?: string
+  regionGroup?: string,
+  coords?: Coords | null
 ): Promise<SearchResult> {
   const query = rawQuery.trim();
+
+  // 검색어가 비면 "추천 목록"을 내려준다 (클라이언트의 빈 검색어 가드 제거용).
   if (query.length < 1) {
-    throw new ValidationError("search.queryRequired");
+    const browse = await listPlaces({ limit, offset, regionGroup, coords });
+    return {
+      query: "",
+      regions: { total: 0, limit: regionLimit, offset: regionOffset, items: [] },
+      places: browse,
+      festivals: [],
+    };
   }
 
   // 권역 칩("충청" 등) 필터. 지역·관광지 양쪽에 동일하게 적용한다.
@@ -83,7 +115,7 @@ export async function search(
     ],
   };
 
-  const [regions, placeCandidates, placeTotal] = await Promise.all([
+  const [regions, placeCandidates, placeTotal, festivals] = await Promise.all([
     searchRegions(query, regionLimit, regionOffset, groupWhere),
     prisma.place.findMany({
       where: placeWhere,
@@ -94,6 +126,7 @@ export async function search(
       take: PLACE_CANDIDATE_CAP,
     }),
     prisma.place.count({ where: placeWhere }),
+    searchFestivals(query),
   ]);
 
   const lowered = query.toLowerCase();
@@ -111,6 +144,7 @@ export async function search(
       mapX: place.mapX,
       mapY: place.mapY,
       stampCount: place._count.stamps,
+      distanceKm: distanceToPlace(coords, place.mapY, place.mapX),
       region: {
         id: place.region.id,
         sidoName: place.region.sidoName,
@@ -124,7 +158,61 @@ export async function search(
     query,
     regions,
     places: { total: placeTotal, limit, offset, items },
+    festivals,
   };
+}
+
+/**
+ * 이름·설명에 검색어가 걸리는 스페셜 퀘스트(SEASONAL 뱃지) 검색.
+ * 시즌이 지났거나 아직 시작 전이어도 결과에 포함하고 status로 구분한다.
+ */
+async function searchFestivals(query: string): Promise<SearchFestivalItem[]> {
+  const now = new Date();
+
+  const badges = await prisma.badge.findMany({
+    where: {
+      type: "SEASONAL",
+      OR: [
+        { name: { contains: query, mode: "insensitive" } },
+        { description: { contains: query, mode: "insensitive" } },
+      ],
+    },
+    include: { region: true },
+    orderBy: { endAt: "asc" },
+    take: FESTIVAL_CANDIDATE_CAP,
+  });
+
+  return badges.map((badge) => {
+    let status: SearchFestivalItem["status"] = "ACTIVE";
+    if (badge.startAt && badge.startAt > now) status = "UPCOMING";
+    else if (badge.endAt && badge.endAt < now) status = "EXPIRED";
+
+    const referenceDate = status === "UPCOMING" ? badge.startAt : badge.endAt;
+    const daysRemaining = referenceDate
+      ? Math.ceil((referenceDate.getTime() - now.getTime()) / (1000 * 60 * 60 * 24))
+      : null;
+
+    return {
+      id: badge.id,
+      key: badge.key,
+      name: badge.name,
+      description: badge.description,
+      icon: toPublicAssetUrl(badge.icon) ?? badge.icon,
+      status,
+      startAt: badge.startAt,
+      endAt: badge.endAt,
+      daysRemaining,
+      region: badge.region
+        ? {
+            id: badge.region.id,
+            sidoName: badge.region.sidoName,
+            sigunguName: badge.region.sigunguName,
+            displayName: formatRegionName(badge.region.sidoName, badge.region.sigunguName),
+            isDepopulated: badge.region.isDepopulated,
+          }
+        : null,
+    };
+  });
 }
 
 /** 시·군 단위 지역만: 검색 조건(where) 조립 (권역 필터를 AND로 합친다) */

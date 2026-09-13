@@ -141,6 +141,48 @@ export const messages = {
     ja: "ログインに成功しました",
     zh: "登录成功",
   },
+  "auth.deviceIdRequired": {
+    ko: "deviceId는 필수입니다.",
+    en: "deviceId is required.",
+    ja: "deviceIdは必須です。",
+    zh: "deviceId 为必填项。",
+  },
+  "auth.guestSignupComplete": {
+    ko: "게스트 계정 생성 완료",
+    en: "Guest account created",
+    ja: "ゲストアカウントの作成が完了しました",
+    zh: "访客账号创建完成",
+  },
+  "auth.guestLoginSuccess": {
+    ko: "게스트 로그인 성공",
+    en: "Signed in as guest",
+    ja: "ゲストログインに成功しました",
+    zh: "访客登录成功",
+  },
+  "auth.deviceAlreadyLinked": {
+    ko: "이미 정회원으로 전환된 deviceId입니다.",
+    en: "This deviceId has already been upgraded to a full account.",
+    ja: "このdeviceIdはすでに正会員に切り替わっています。",
+    zh: "该 deviceId 已升级为正式会员账号。",
+  },
+  "auth.notGuestUser": {
+    ko: "게스트 계정이 아닙니다.",
+    en: "This account is not a guest account.",
+    ja: "ゲストアカウントではありません。",
+    zh: "该账号不是访客账号。",
+  },
+  "auth.socialAccountAlreadyLinked": {
+    ko: "이미 다른 계정에 연결된 소셜 계정입니다.",
+    en: "This social account is already linked to another account.",
+    ja: "すでに別のアカウントに連携済みのソーシャルアカウントです。",
+    zh: "该社交账号已绑定到另一个账号。",
+  },
+  "auth.guestUpgradeSuccess": {
+    ko: "정회원 전환 완료",
+    en: "Upgraded to a full account",
+    ja: "正会員への切り替えが完了しました",
+    zh: "已升级为正式会员",
+  },
 
   // ---------- 검색 ----------
   "search.queryRequired": {
@@ -279,17 +321,55 @@ export const messages = {
   },
 
   // ---------- 관광지 / 지역 ----------
+  "place.coordsInvalid": {
+    ko: "lat와 lng는 함께, 유효한 좌표 범위로 넘겨주세요.",
+    en: "Provide lat and lng together as a valid coordinate pair.",
+    ja: "latとlngは有効な座標として一緒に指定してください。",
+    zh: "请同时提供有效范围内的 lat 与 lng。",
+  },
   "place.notFound": {
     ko: "존재하지 않는 관광지입니다.",
     en: "This attraction does not exist.",
     ja: "存在しない観光地です。",
     zh: "该景点不存在。",
   },
+  "place.idRequired": {
+    ko: "placeId는 필수입니다.",
+    en: "placeId is required.",
+    ja: "placeIdは必須です。",
+    zh: "placeId 为必填项。",
+  },
+  "tag.notFound": {
+    ko: "존재하지 않는 태그입니다.",
+    en: "This tag does not exist.",
+    ja: "存在しないタグです。",
+    zh: "该标签不存在。",
+  },
+  "tag.alreadyLinked": {
+    ko: "이미 해당 태그가 연결된 관광지입니다.",
+    en: "This attraction is already linked to the tag.",
+    ja: "すでにこのタグが連携済みの観光地です。",
+    zh: "该景点已关联此标签。",
+  },
+  "tag.linkNotFound": {
+    ko: "연결되어 있지 않은 태그-관광지 조합입니다.",
+    en: "This tag is not linked to the given attraction.",
+    ja: "連携されていないタグと観光地の組み合わせです。",
+    zh: "该标签与景点尚未关联。",
+  },
   "region.notFound": {
     ko: "존재하지 않는 지역입니다.",
     en: "This region does not exist.",
     ja: "存在しない地域です。",
     zh: "该地区不存在。",
+  },
+
+  // ---------- 관리자 ----------
+  "admin.unauthorized": {
+    ko: "관리자 인증에 실패했습니다. x-admin-key 헤더를 확인해주세요.",
+    en: "Admin authentication failed. Please check the x-admin-key header.",
+    ja: "管理者認証に失敗しました。x-admin-keyヘッダーを確認してください。",
+    zh: "管理员认证失败，请检查 x-admin-key 请求头。",
   },
 } satisfies Record<string, Entry>;
 

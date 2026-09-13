@@ -133,6 +133,7 @@ export async function syncAllPlaces(): Promise<SyncResult> {
               thumbnail: item.firstimage || null,
               mapX: parseFloat(item.mapx),
               mapY: parseFloat(item.mapy),
+              regionId: region.id,
             },
             create: {
               contentId: item.contentid,

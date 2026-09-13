@@ -4,6 +4,7 @@ import { getUserLevel } from "../utils/gamification.js";
 import { getMyRanking } from "./ranking.service.js";
 import { CITY_COUNTY_ONLY } from "../utils/regionFilter.js";
 import { NotFoundError, ValidationError } from "../utils/errors.js";
+import { getRegionBadgeMap, RegionBadgeSummary } from "./badge.service.js";
 
 interface UserProfile {
   id: string;
@@ -183,6 +184,7 @@ interface RepresentativeStamp {
   sigunguName: string;
   displayName: string; // 화면 표시용 (예: "부산 중구")
   visitCount: number;
+  badge: RegionBadgeSummary | null; // 기초자치단체 수집판 뱃지 (없으면 null)
 }
 
 interface RankerDetail {
@@ -274,9 +276,11 @@ async function getTopRegions(userId: string, limit: number): Promise<Representat
 
   if (grouped.length === 0) return [];
 
-  const regions = await prisma.region.findMany({
-    where: { id: { in: grouped.map((g) => g.regionId) } },
-  });
+  const regionIds = grouped.map((g) => g.regionId);
+  const [regions, badgeMap] = await Promise.all([
+    prisma.region.findMany({ where: { id: { in: regionIds } } }),
+    getRegionBadgeMap(regionIds),
+  ]);
   const regionMap = new Map(regions.map((r) => [r.id, r]));
 
   return grouped.map((g) => {
@@ -287,6 +291,7 @@ async function getTopRegions(userId: string, limit: number): Promise<Representat
       sigunguName: region?.sigunguName ?? "",
       displayName: region ? formatRegionName(region.sidoName, region.sigunguName) : "",
       visitCount: g._count.id,
+      badge: badgeMap.get(g.regionId) ?? null,
     };
   });
 }

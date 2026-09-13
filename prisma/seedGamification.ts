@@ -34,6 +34,13 @@ const tags = [
  * - `endAt`   = 축제 종료일. D-day 카운트다운의 기준이다.
  * - ⚠️ 축제 일정은 매년 지자체가 확정 공고한다. 아래 날짜는 예년 개최 시기 기준의
  *   운영 초기값이므로, 시즌 진입 전에 지자체 공고로 반드시 갱신해야 한다.
+ *
+ * 날짜 갱신 이력 (2026-09-13)
+ * - 2026년 개최 확정 공고분(정선아리랑제, 진주남강유등축제, 김제 지평선축제,
+ *   영동 난계국악축제)은 지자체 공식 발표 일정으로 갱신했다.
+ * - 2027년 개최분(진해 군항제, 함평 나비대축제, 보령 머드축제, 봉화 은어축제,
+ *   화천 산천어축제, 태백산 눈축제)은 이 시점 기준 공식 일정 미발표 상태라
+ *   예년 개최 시기 추정값을 그대로 유지했다. 공고가 나오면 다시 갱신해야 한다.
  */
 const seasonalQuests = [
   {
@@ -83,8 +90,8 @@ const seasonalQuests = [
     icon: "badges/jeongseon-arirang-2026.png",
     sidoName: "강원특별자치도",
     sigunguName: "정선군",
-    startAt: new Date("2026-08-25"),
-    endAt: new Date("2026-09-27"),
+    startAt: new Date("2026-09-01"),
+    endAt: new Date("2026-10-04"),
   },
   {
     key: "jinju_lantern_2026",
@@ -93,8 +100,8 @@ const seasonalQuests = [
     icon: "badges/jinju-lantern-2026.png",
     sidoName: "경상남도",
     sigunguName: "진주시",
-    startAt: new Date("2026-09-01"),
-    endAt: new Date("2026-10-11"),
+    startAt: new Date("2026-09-03"),
+    endAt: new Date("2026-10-18"),
   },
   {
     key: "gimje_horizon_2026",
@@ -103,18 +110,18 @@ const seasonalQuests = [
     icon: "badges/gimje-horizon-2026.png",
     sidoName: "전북특별자치도",
     sigunguName: "김제시",
-    startAt: new Date("2026-09-07"),
-    endAt: new Date("2026-10-11"),
+    startAt: new Date("2026-09-01"),
+    endAt: new Date("2026-10-05"),
   },
   {
     key: "yeongdong_nangye_2026",
     name: "영동 난계국악축제 2026",
-    description: "국악의 고장 영동에서 사흘 동안만 열리는 소리 퀘스트.",
+    description: "국악의 고장 영동에서 나흘 동안만 열리는 소리 퀘스트.",
     icon: "badges/yeongdong-nangye-2026.png",
     sidoName: "충청북도",
     sigunguName: "영동군",
-    startAt: new Date("2026-09-09"),
-    endAt: new Date("2026-10-11"),
+    startAt: new Date("2026-09-15"),
+    endAt: new Date("2026-10-18"),
   },
   {
     key: "hwacheon_ice_2027",

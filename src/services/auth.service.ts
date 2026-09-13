@@ -280,26 +280,13 @@ export async function upgradeGuestToSocial(input: UpgradeGuestInput): Promise<Au
 
 /**
  * 만료된 게스트 계정을 정리합니다.
- * FK 제약을 피하기 위해 연관 데이터(스탬프·매칭이력·뱃지·리뷰)를 먼저 지운 뒤 User row를 삭제합니다.
+ * 연관 데이터(스탬프·매칭이력·뱃지·리뷰)는 onDelete: Cascade로 함께 삭제됩니다.
  * 반환값은 삭제된 게스트 계정 수입니다.
  */
 export async function cleanupExpiredGuests(): Promise<number> {
-  const expiredGuests = await prisma.user.findMany({
+  const { count } = await prisma.user.deleteMany({
     where: { isGuest: true, guestExpiresAt: { lt: new Date() } },
-    select: { id: true },
   });
 
-  if (expiredGuests.length === 0) return 0;
-
-  const ids = expiredGuests.map((guest) => guest.id);
-
-  await prisma.$transaction([
-    prisma.userStamp.deleteMany({ where: { userId: { in: ids } } }),
-    prisma.matchHistory.deleteMany({ where: { userId: { in: ids } } }),
-    prisma.userBadge.deleteMany({ where: { userId: { in: ids } } }),
-    prisma.review.deleteMany({ where: { userId: { in: ids } } }),
-    prisma.user.deleteMany({ where: { id: { in: ids } } }),
-  ]);
-
-  return ids.length;
+  return count;
 }

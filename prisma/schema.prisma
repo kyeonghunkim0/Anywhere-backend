@@ -108,7 +108,7 @@ model UserStamp {
   distanceKm    Float?   // 확정된 여정을 통해 체크인한 경우, 매칭 시점의 이동 거리 (프로필 누적 이동 거리 집계용)
 
   userId String
-  user   User   @relation(fields: [userId], references: [id])
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   placeId String
   place   Place  @relation(fields: [placeId], references: [id])
@@ -137,7 +137,7 @@ model MatchHistory {
   cancelledAt DateTime? // "여정 취소하기" 누른 시각
 
   userId String
-  user   User   @relation(fields: [userId], references: [id])
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   placeId String
   place   Place  @relation(fields: [placeId], references: [id])
@@ -158,7 +158,7 @@ model Review {
   createdAt DateTime @default(now())
 
   userId String
-  user   User   @relation(fields: [userId], references: [id])
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   placeId String
   place   Place  @relation(fields: [placeId], references: [id])
@@ -237,7 +237,7 @@ model UserBadge {
   earnedAt DateTime @default(now())
 
   userId String
-  user   User   @relation(fields: [userId], references: [id])
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   badgeId String
   badge   Badge   @relation(fields: [badgeId], references: [id])

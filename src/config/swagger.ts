@@ -166,6 +166,16 @@ export const swaggerDocument: JsonObject = {
           mapX: { type: "number", example: 126.977 },
           mapY: { type: "number", example: 37.579 },
           distanceKm: { type: "number", example: 3.2 },
+          latestReview: {
+            type: "object",
+            nullable: true,
+            description: "이 장소에 달린 가장 최신 후기 (없으면 null)",
+            properties: {
+              content: { type: "string", example: "저녁에 산책하기 정말 좋아요." },
+              nickname: { type: "string", example: "여행자" },
+              createdAt: { type: "string", format: "date-time" },
+            },
+          },
         },
       },
       Region: {
@@ -181,12 +191,6 @@ export const swaggerDocument: JsonObject = {
             nullable: true,
             example: "https://tong.visitkorea.or.kr/cms2/website/52/2586952.jpg",
             description: "지역 대표 사진 (한국관광공사 관광사진갤러리)",
-          },
-          quote: {
-            type: "string",
-            nullable: true,
-            example: "여기 오면 다들 국밥부터 한 그릇 하고 가요.",
-            description: "주민 한마디 (여권 지역 상세용 플레이버 텍스트)",
           },
         },
       },

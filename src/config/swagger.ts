@@ -59,6 +59,7 @@ export const swaggerDocument: JsonObject = {
     { name: "Regions", description: "지역 로컬 성장 게이지" },
     { name: "Users", description: "유저 프로필 / 설정 / 랭커 상세" },
     { name: "App", description: "앱 정보 (버전 / 점검 상태)" },
+    { name: "Home", description: "홈 화면 진입용 통합 조회" },
   ],
   components: {
     securitySchemes: {
@@ -1057,6 +1058,22 @@ export const swaggerDocument: JsonObject = {
         description: "홈 화면 [스페셜 퀘스트] 캐러셀에 노출되는 활성 시즌 한정 뱃지 목록입니다.",
         responses: {
           "200": { description: "조회 성공" },
+        },
+      },
+    },
+    "/api/home": {
+      get: {
+        tags: ["Home"],
+        summary: "홈 화면 통합 조회",
+        description:
+          "홈 진입 시 필요한 데이터를 한 번에 반환합니다 (currentTrip · seasonalBadges · growthRegions · sectionVisibility).\n\n" +
+          "- sectionVisibility.specialQuests / trendingLocal: 운영자가 수동으로 끈 섹션은 false. " +
+          "false인 섹션은 데이터가 채워져 와도 클라이언트가 무조건 숨겨야 합니다 (enabled && !isEmpty로 결합).\n" +
+          "- 클라이언트가 모르는 sectionVisibility 키는 무시하도록 설계되어 있어 섹션이 추가돼도 하위 호환됩니다.",
+        security: [{ BearerAuth: [] }],
+        responses: {
+          "200": { description: "조회 성공" },
+          "401": { description: "인증 필요" },
         },
       },
     },

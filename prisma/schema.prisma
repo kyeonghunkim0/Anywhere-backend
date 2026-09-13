@@ -247,3 +247,16 @@ model UserBadge {
   @@map("user_badges")
 }
 
+// ============================================
+// 홈 섹션 노출 제어 (Section Visibility Table) - 운영자 수동 on/off
+// ============================================
+model SectionVisibility {
+  id         String   @id @default(cuid())
+  sectionKey String   @unique // 예: "specialQuests", "trendingLocal"
+  enabled    Boolean  @default(true)
+  updatedBy  String?  // 변경한 운영자 식별자 (콘솔 도입 전까지는 DB 직접 수정)
+  updatedAt  DateTime @updatedAt
+
+  @@map("section_visibility")
+}
+

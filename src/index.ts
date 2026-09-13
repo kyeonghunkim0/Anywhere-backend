@@ -18,6 +18,7 @@ import appRoutes from "./routes/app.routes.js";
 import reviewRoutes from "./routes/review.routes.js";
 import placeRoutes from "./routes/place.routes.js";
 import searchRoutes from "./routes/search.routes.js";
+import homeRoutes from "./routes/home.routes.js";
 import { notFoundHandler, errorHandler } from "./middlewares/error.middleware.js";
 import { localeMiddleware } from "./middlewares/locale.middleware.js";
 import { startSyncPlacesJob } from "./jobs/syncPlaces.job.js";
@@ -88,6 +89,7 @@ app.use("/api/app", appRoutes);
 app.use("/api/reviews", reviewRoutes);
 app.use("/api/places", placeRoutes);
 app.use("/api/search", searchRoutes);
+app.use("/api/home", homeRoutes);
 
 // ============================================
 // 404 · 전역 에러 핸들러 (반드시 라우트 등록 이후)

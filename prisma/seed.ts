@@ -139,11 +139,11 @@ const regions: RegionSeedData[] = [
   // ============================================
   // 울산광역시 (areaCode: 7) - 5개 구·군
   // ============================================
-  { sidoName: "울산광역시", sigunguName: "남구", areaCode: "7", sigunguCode: "1", isDepopulated: false, centerLat: 35.5443, centerLng: 129.3300 },
-  { sidoName: "울산광역시", sigunguName: "동구", areaCode: "7", sigunguCode: "2", isDepopulated: false, centerLat: 35.5050, centerLng: 129.4166 },
-  { sidoName: "울산광역시", sigunguName: "북구", areaCode: "7", sigunguCode: "3", isDepopulated: false, centerLat: 35.5834, centerLng: 129.3614 },
-  { sidoName: "울산광역시", sigunguName: "울주군", areaCode: "7", sigunguCode: "4", isDepopulated: false, centerLat: 35.5225, centerLng: 129.2426 },
-  { sidoName: "울산광역시", sigunguName: "중구", areaCode: "7", sigunguCode: "5", isDepopulated: false, centerLat: 35.5694, centerLng: 129.3322 },
+  { sidoName: "울산광역시", sigunguName: "남구", areaCode: "7", sigunguCode: "2", isDepopulated: false, centerLat: 35.5443, centerLng: 129.3300 },
+  { sidoName: "울산광역시", sigunguName: "동구", areaCode: "7", sigunguCode: "3", isDepopulated: false, centerLat: 35.5050, centerLng: 129.4166 },
+  { sidoName: "울산광역시", sigunguName: "북구", areaCode: "7", sigunguCode: "4", isDepopulated: false, centerLat: 35.5834, centerLng: 129.3614 },
+  { sidoName: "울산광역시", sigunguName: "울주군", areaCode: "7", sigunguCode: "5", isDepopulated: false, centerLat: 35.5225, centerLng: 129.2426 },
+  { sidoName: "울산광역시", sigunguName: "중구", areaCode: "7", sigunguCode: "1", isDepopulated: false, centerLat: 35.5694, centerLng: 129.3322 },
 
   // ============================================
   // 세종특별자치시 (areaCode: 8) - 1개
@@ -217,24 +217,24 @@ const regions: RegionSeedData[] = [
   { sidoName: "충청북도", sigunguName: "옥천군", areaCode: "33", sigunguCode: "5", isDepopulated: true, centerLat: 36.3063, centerLng: 127.5714 },
   { sidoName: "충청북도", sigunguName: "음성군", areaCode: "33", sigunguCode: "6", isDepopulated: false, centerLat: 36.9400, centerLng: 127.6905 },
   { sidoName: "충청북도", sigunguName: "제천시", areaCode: "33", sigunguCode: "7", isDepopulated: true, centerLat: 37.1327, centerLng: 128.1900 },
-  { sidoName: "충청북도", sigunguName: "증평군", areaCode: "33", sigunguCode: "8", isDepopulated: false, centerLat: 36.7856, centerLng: 127.5816 },
-  { sidoName: "충청북도", sigunguName: "진천군", areaCode: "33", sigunguCode: "9", isDepopulated: false, centerLat: 36.8553, centerLng: 127.4356 },
+  { sidoName: "충청북도", sigunguName: "증평군", areaCode: "33", sigunguCode: "12", isDepopulated: false, centerLat: 36.7856, centerLng: 127.5816 },
+  { sidoName: "충청북도", sigunguName: "진천군", areaCode: "33", sigunguCode: "8", isDepopulated: false, centerLat: 36.8553, centerLng: 127.4356 },
   { sidoName: "충청북도", sigunguName: "청주시", areaCode: "33", sigunguCode: "10", isDepopulated: false, centerLat: 36.6424, centerLng: 127.4890 },
   { sidoName: "충청북도", sigunguName: "충주시", areaCode: "33", sigunguCode: "11", isDepopulated: false, centerLat: 36.9910, centerLng: 127.9259 },
 
   // ============================================
   // 충청남도 (areaCode: 34) - 15개 시·군
   // ============================================
-  { sidoName: "충청남도", sigunguName: "계룡시", areaCode: "34", sigunguCode: "1", isDepopulated: false, centerLat: 36.2744, centerLng: 127.2486 },
-  { sidoName: "충청남도", sigunguName: "공주시", areaCode: "34", sigunguCode: "2", isDepopulated: true, centerLat: 36.4465, centerLng: 127.1190 },
-  { sidoName: "충청남도", sigunguName: "금산군", areaCode: "34", sigunguCode: "3", isDepopulated: true, centerLat: 36.1091, centerLng: 127.4880 },
-  { sidoName: "충청남도", sigunguName: "논산시", areaCode: "34", sigunguCode: "4", isDepopulated: true, centerLat: 36.1872, centerLng: 127.0987 },
-  { sidoName: "충청남도", sigunguName: "당진시", areaCode: "34", sigunguCode: "5", isDepopulated: false, centerLat: 36.8899, centerLng: 126.6462 },
-  { sidoName: "충청남도", sigunguName: "보령시", areaCode: "34", sigunguCode: "6", isDepopulated: true, centerLat: 36.3334, centerLng: 126.6126 },
-  { sidoName: "충청남도", sigunguName: "부여군", areaCode: "34", sigunguCode: "7", isDepopulated: true, centerLat: 36.2756, centerLng: 126.9098 },
-  { sidoName: "충청남도", sigunguName: "서산시", areaCode: "34", sigunguCode: "8", isDepopulated: false, centerLat: 36.7845, centerLng: 126.4503 },
-  { sidoName: "충청남도", sigunguName: "서천군", areaCode: "34", sigunguCode: "9", isDepopulated: true, centerLat: 36.0801, centerLng: 126.6916 },
-  { sidoName: "충청남도", sigunguName: "아산시", areaCode: "34", sigunguCode: "10", isDepopulated: false, centerLat: 36.7898, centerLng: 127.0018 },
+  { sidoName: "충청남도", sigunguName: "계룡시", areaCode: "34", sigunguCode: "16", isDepopulated: false, centerLat: 36.2744, centerLng: 127.2486 },
+  { sidoName: "충청남도", sigunguName: "공주시", areaCode: "34", sigunguCode: "1", isDepopulated: true, centerLat: 36.4465, centerLng: 127.1190 },
+  { sidoName: "충청남도", sigunguName: "금산군", areaCode: "34", sigunguCode: "2", isDepopulated: true, centerLat: 36.1091, centerLng: 127.4880 },
+  { sidoName: "충청남도", sigunguName: "논산시", areaCode: "34", sigunguCode: "3", isDepopulated: true, centerLat: 36.1872, centerLng: 127.0987 },
+  { sidoName: "충청남도", sigunguName: "당진시", areaCode: "34", sigunguCode: "4", isDepopulated: false, centerLat: 36.8899, centerLng: 126.6462 },
+  { sidoName: "충청남도", sigunguName: "보령시", areaCode: "34", sigunguCode: "5", isDepopulated: true, centerLat: 36.3334, centerLng: 126.6126 },
+  { sidoName: "충청남도", sigunguName: "부여군", areaCode: "34", sigunguCode: "6", isDepopulated: true, centerLat: 36.2756, centerLng: 126.9098 },
+  { sidoName: "충청남도", sigunguName: "서산시", areaCode: "34", sigunguCode: "7", isDepopulated: false, centerLat: 36.7845, centerLng: 126.4503 },
+  { sidoName: "충청남도", sigunguName: "서천군", areaCode: "34", sigunguCode: "8", isDepopulated: true, centerLat: 36.0801, centerLng: 126.6916 },
+  { sidoName: "충청남도", sigunguName: "아산시", areaCode: "34", sigunguCode: "9", isDepopulated: false, centerLat: 36.7898, centerLng: 127.0018 },
   { sidoName: "충청남도", sigunguName: "예산군", areaCode: "34", sigunguCode: "11", isDepopulated: true, centerLat: 36.6828, centerLng: 126.8492 },
   { sidoName: "충청남도", sigunguName: "천안시", areaCode: "34", sigunguCode: "12", isDepopulated: false, centerLat: 36.8151, centerLng: 127.1139 },
   { sidoName: "충청남도", sigunguName: "청양군", areaCode: "34", sigunguCode: "13", isDepopulated: true, centerLat: 36.4592, centerLng: 126.8022 },
@@ -276,19 +276,19 @@ const regions: RegionSeedData[] = [
   { sidoName: "경상남도", sigunguName: "고성군", areaCode: "36", sigunguCode: "3", isDepopulated: true, centerLat: 34.9732, centerLng: 128.3228 },
   { sidoName: "경상남도", sigunguName: "김해시", areaCode: "36", sigunguCode: "4", isDepopulated: false, centerLat: 35.2285, centerLng: 128.8894 },
   { sidoName: "경상남도", sigunguName: "남해군", areaCode: "36", sigunguCode: "5", isDepopulated: true, centerLat: 34.8376, centerLng: 127.8924 },
-  { sidoName: "경상남도", sigunguName: "밀양시", areaCode: "36", sigunguCode: "6", isDepopulated: true, centerLat: 35.5037, centerLng: 128.7466 },
-  { sidoName: "경상남도", sigunguName: "사천시", areaCode: "36", sigunguCode: "7", isDepopulated: true, centerLat: 35.0032, centerLng: 128.0642 },
-  { sidoName: "경상남도", sigunguName: "산청군", areaCode: "36", sigunguCode: "8", isDepopulated: true, centerLat: 35.4155, centerLng: 127.8732 },
-  { sidoName: "경상남도", sigunguName: "양산시", areaCode: "36", sigunguCode: "9", isDepopulated: false, centerLat: 35.3350, centerLng: 129.0373 },
-  { sidoName: "경상남도", sigunguName: "의령군", areaCode: "36", sigunguCode: "10", isDepopulated: true, centerLat: 35.3223, centerLng: 128.2614 },
-  { sidoName: "경상남도", sigunguName: "진주시", areaCode: "36", sigunguCode: "11", isDepopulated: false, centerLat: 35.1800, centerLng: 128.1076 },
-  { sidoName: "경상남도", sigunguName: "창녕군", areaCode: "36", sigunguCode: "12", isDepopulated: true, centerLat: 35.5442, centerLng: 128.4923 },
-  { sidoName: "경상남도", sigunguName: "창원시", areaCode: "36", sigunguCode: "13", isDepopulated: false, centerLat: 35.2282, centerLng: 128.6811 },
-  { sidoName: "경상남도", sigunguName: "통영시", areaCode: "36", sigunguCode: "14", isDepopulated: true, centerLat: 34.8544, centerLng: 128.4331 },
-  { sidoName: "경상남도", sigunguName: "하동군", areaCode: "36", sigunguCode: "15", isDepopulated: true, centerLat: 35.0673, centerLng: 127.7513 },
-  { sidoName: "경상남도", sigunguName: "함안군", areaCode: "36", sigunguCode: "16", isDepopulated: true, centerLat: 35.2722, centerLng: 128.4065 },
-  { sidoName: "경상남도", sigunguName: "함양군", areaCode: "36", sigunguCode: "17", isDepopulated: true, centerLat: 35.5200, centerLng: 127.7252 },
-  { sidoName: "경상남도", sigunguName: "합천군", areaCode: "36", sigunguCode: "18", isDepopulated: true, centerLat: 35.5667, centerLng: 128.1657 },
+  { sidoName: "경상남도", sigunguName: "밀양시", areaCode: "36", sigunguCode: "7", isDepopulated: true, centerLat: 35.5037, centerLng: 128.7466 },
+  { sidoName: "경상남도", sigunguName: "사천시", areaCode: "36", sigunguCode: "8", isDepopulated: true, centerLat: 35.0032, centerLng: 128.0642 },
+  { sidoName: "경상남도", sigunguName: "산청군", areaCode: "36", sigunguCode: "9", isDepopulated: true, centerLat: 35.4155, centerLng: 127.8732 },
+  { sidoName: "경상남도", sigunguName: "양산시", areaCode: "36", sigunguCode: "10", isDepopulated: false, centerLat: 35.3350, centerLng: 129.0373 },
+  { sidoName: "경상남도", sigunguName: "의령군", areaCode: "36", sigunguCode: "12", isDepopulated: true, centerLat: 35.3223, centerLng: 128.2614 },
+  { sidoName: "경상남도", sigunguName: "진주시", areaCode: "36", sigunguCode: "13", isDepopulated: false, centerLat: 35.1800, centerLng: 128.1076 },
+  { sidoName: "경상남도", sigunguName: "창녕군", areaCode: "36", sigunguCode: "15", isDepopulated: true, centerLat: 35.5442, centerLng: 128.4923 },
+  { sidoName: "경상남도", sigunguName: "창원시", areaCode: "36", sigunguCode: "16", isDepopulated: false, centerLat: 35.2282, centerLng: 128.6811 },
+  { sidoName: "경상남도", sigunguName: "통영시", areaCode: "36", sigunguCode: "17", isDepopulated: true, centerLat: 34.8544, centerLng: 128.4331 },
+  { sidoName: "경상남도", sigunguName: "하동군", areaCode: "36", sigunguCode: "18", isDepopulated: true, centerLat: 35.0673, centerLng: 127.7513 },
+  { sidoName: "경상남도", sigunguName: "함안군", areaCode: "36", sigunguCode: "19", isDepopulated: true, centerLat: 35.2722, centerLng: 128.4065 },
+  { sidoName: "경상남도", sigunguName: "함양군", areaCode: "36", sigunguCode: "20", isDepopulated: true, centerLat: 35.5200, centerLng: 127.7252 },
+  { sidoName: "경상남도", sigunguName: "합천군", areaCode: "36", sigunguCode: "21", isDepopulated: true, centerLat: 35.5667, centerLng: 128.1657 },
 
   // ============================================
   // 전라북도 (areaCode: 37) - 14개 시·군
@@ -324,21 +324,21 @@ const regions: RegionSeedData[] = [
   { sidoName: "전라남도", sigunguName: "순천시", areaCode: "38", sigunguCode: "11", isDepopulated: false, centerLat: 34.9506, centerLng: 127.4872 },
   { sidoName: "전라남도", sigunguName: "신안군", areaCode: "38", sigunguCode: "12", isDepopulated: true, centerLat: 34.8274, centerLng: 126.1072 },
   { sidoName: "전라남도", sigunguName: "여수시", areaCode: "38", sigunguCode: "13", isDepopulated: false, centerLat: 34.7604, centerLng: 127.6622 },
-  { sidoName: "전라남도", sigunguName: "영광군", areaCode: "38", sigunguCode: "14", isDepopulated: true, centerLat: 35.2772, centerLng: 126.5121 },
-  { sidoName: "전라남도", sigunguName: "영암군", areaCode: "38", sigunguCode: "15", isDepopulated: true, centerLat: 34.8001, centerLng: 126.6965 },
-  { sidoName: "전라남도", sigunguName: "완도군", areaCode: "38", sigunguCode: "16", isDepopulated: true, centerLat: 34.3109, centerLng: 126.7550 },
-  { sidoName: "전라남도", sigunguName: "장성군", areaCode: "38", sigunguCode: "17", isDepopulated: true, centerLat: 35.3020, centerLng: 126.7846 },
-  { sidoName: "전라남도", sigunguName: "장흥군", areaCode: "38", sigunguCode: "18", isDepopulated: true, centerLat: 34.6816, centerLng: 126.9070 },
-  { sidoName: "전라남도", sigunguName: "진도군", areaCode: "38", sigunguCode: "19", isDepopulated: true, centerLat: 34.4869, centerLng: 126.2634 },
-  { sidoName: "전라남도", sigunguName: "함평군", areaCode: "38", sigunguCode: "20", isDepopulated: true, centerLat: 35.0654, centerLng: 126.5161 },
-  { sidoName: "전라남도", sigunguName: "해남군", areaCode: "38", sigunguCode: "21", isDepopulated: true, centerLat: 34.5735, centerLng: 126.5990 },
-  { sidoName: "전라남도", sigunguName: "화순군", areaCode: "38", sigunguCode: "22", isDepopulated: true, centerLat: 35.0644, centerLng: 126.9866 },
+  { sidoName: "전라남도", sigunguName: "영광군", areaCode: "38", sigunguCode: "16", isDepopulated: true, centerLat: 35.2772, centerLng: 126.5121 },
+  { sidoName: "전라남도", sigunguName: "영암군", areaCode: "38", sigunguCode: "17", isDepopulated: true, centerLat: 34.8001, centerLng: 126.6965 },
+  { sidoName: "전라남도", sigunguName: "완도군", areaCode: "38", sigunguCode: "18", isDepopulated: true, centerLat: 34.3109, centerLng: 126.7550 },
+  { sidoName: "전라남도", sigunguName: "장성군", areaCode: "38", sigunguCode: "19", isDepopulated: true, centerLat: 35.3020, centerLng: 126.7846 },
+  { sidoName: "전라남도", sigunguName: "장흥군", areaCode: "38", sigunguCode: "20", isDepopulated: true, centerLat: 34.6816, centerLng: 126.9070 },
+  { sidoName: "전라남도", sigunguName: "진도군", areaCode: "38", sigunguCode: "21", isDepopulated: true, centerLat: 34.4869, centerLng: 126.2634 },
+  { sidoName: "전라남도", sigunguName: "함평군", areaCode: "38", sigunguCode: "22", isDepopulated: true, centerLat: 35.0654, centerLng: 126.5161 },
+  { sidoName: "전라남도", sigunguName: "해남군", areaCode: "38", sigunguCode: "23", isDepopulated: true, centerLat: 34.5735, centerLng: 126.5990 },
+  { sidoName: "전라남도", sigunguName: "화순군", areaCode: "38", sigunguCode: "24", isDepopulated: true, centerLat: 35.0644, centerLng: 126.9866 },
 
   // ============================================
   // 제주특별자치도 (areaCode: 39) - 2개 시
   // ============================================
-  { sidoName: "제주특별자치도", sigunguName: "제주시", areaCode: "39", sigunguCode: "1", isDepopulated: false, centerLat: 33.4996, centerLng: 126.5312 },
-  { sidoName: "제주특별자치도", sigunguName: "서귀포시", areaCode: "39", sigunguCode: "2", isDepopulated: false, centerLat: 33.2541, centerLng: 126.5600 },
+  { sidoName: "제주특별자치도", sigunguName: "제주시", areaCode: "39", sigunguCode: "4", isDepopulated: false, centerLat: 33.4996, centerLng: 126.5312 },
+  { sidoName: "제주특별자치도", sigunguName: "서귀포시", areaCode: "39", sigunguCode: "3", isDepopulated: false, centerLat: 33.2541, centerLng: 126.5600 },
 ];
 
 async function main() {

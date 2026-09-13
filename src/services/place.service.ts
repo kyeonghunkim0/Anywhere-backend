@@ -5,7 +5,43 @@ import { formatRegionName } from "../utils/regionName.js";
 import { CITY_COUNTY_ONLY } from "../utils/regionFilter.js";
 import { regionGroupWhere } from "../utils/regionGroup.js";
 import { distanceToPlace, type Coords } from "../utils/coords.js";
+import { toPublicAssetUrl } from "../utils/assetUrl.js";
 import { getReviewsByPlace } from "./review.service.js";
+
+// 지역에 연결된, 지금 진행 중인 스페셜 퀘스트(SEASONAL 뱃지=지역 축제) 조건
+export function activeSeasonalBadgeWhere(now: Date): Prisma.BadgeWhereInput {
+  return {
+    type: "SEASONAL",
+    startAt: { lte: now },
+    endAt: { gte: now },
+  };
+}
+
+export interface ActiveFestivalBadge {
+  id: string;
+  key: string;
+  name: string;
+  description: string;
+  icon: string | null;
+  endAt: Date;
+  daysRemaining: number;
+}
+
+export function toActiveFestivalBadge(
+  badge: { id: string; key: string; name: string; description: string; icon: string | null; endAt: Date | null },
+  now: Date
+): ActiveFestivalBadge {
+  const endAt = badge.endAt as Date;
+  return {
+    id: badge.id,
+    key: badge.key,
+    name: badge.name,
+    description: badge.description,
+    icon: toPublicAssetUrl(badge.icon) ?? badge.icon,
+    endAt,
+    daysRemaining: Math.ceil((endAt.getTime() - now.getTime()) / (1000 * 60 * 60 * 24)),
+  };
+}
 
 // ============================================
 // 장소 상세 조회
@@ -17,6 +53,7 @@ interface PlaceDetailRegion {
   sigunguName: string;
   displayName: string; // 화면 표시용 (예: "부산 중구")
   isDepopulated: boolean;
+  activeFestivals: ActiveFestivalBadge[]; // 지금 이 지역에서 진행 중인 스페셜 퀘스트(축제)
 }
 
 interface PlaceDetailTag {
@@ -51,10 +88,12 @@ interface PlaceDetail {
  * 클라이언트 "장소 상세" 화면(이름·주소·좌표·지역·태그·후기)을 한 번에 채운다.
  */
 export async function getPlaceDetail(placeId: string, reviewLimit: number = 20): Promise<PlaceDetail> {
+  const now = new Date();
+
   const place = await prisma.place.findUnique({
     where: { id: placeId },
     include: {
-      region: true,
+      region: { include: { badges: { where: activeSeasonalBadgeWhere(now) } } },
       tags: { include: { tag: true } },
       _count: { select: { stamps: true, reviews: true } },
     },
@@ -79,6 +118,7 @@ export async function getPlaceDetail(placeId: string, reviewLimit: number = 20):
       sigunguName: place.region.sigunguName,
       displayName: formatRegionName(place.region.sidoName, place.region.sigunguName),
       isDepopulated: place.region.isDepopulated,
+      activeFestivals: place.region.badges.map((badge) => toActiveFestivalBadge(badge, now)),
     },
     tags: place.tags.map(({ tag }) => ({
       id: tag.id,
@@ -101,6 +141,7 @@ interface PlaceCardRegion {
   sigunguName: string;
   displayName: string; // 화면 표시용 (예: "부산 중구")
   isDepopulated: boolean;
+  activeFestivals: ActiveFestivalBadge[]; // 지금 이 지역에서 진행 중인 스페셜 퀘스트(축제)
 }
 
 export interface PlaceCardItem {
@@ -138,6 +179,7 @@ interface ListPlacesOptions {
  */
 export async function listPlaces(options: ListPlacesOptions = {}): Promise<PlaceListPage> {
   const { limit = 20, offset = 0, regionGroup, depopulatedOnly = false, coords } = options;
+  const now = new Date();
 
   const where: Prisma.PlaceWhereInput = {
     region: {
@@ -152,7 +194,7 @@ export async function listPlaces(options: ListPlacesOptions = {}): Promise<Place
     prisma.place.findMany({
       where,
       include: {
-        region: true,
+        region: { include: { badges: { where: activeSeasonalBadgeWhere(now) } } },
         _count: { select: { stamps: true } },
       },
       orderBy: [
@@ -180,6 +222,7 @@ export async function listPlaces(options: ListPlacesOptions = {}): Promise<Place
       sigunguName: place.region.sigunguName,
       displayName: formatRegionName(place.region.sidoName, place.region.sigunguName),
       isDepopulated: place.region.isDepopulated,
+      activeFestivals: place.region.badges.map((badge) => toActiveFestivalBadge(badge, now)),
     },
   }));
 

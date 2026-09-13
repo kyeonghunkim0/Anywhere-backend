@@ -996,7 +996,8 @@ export const swaggerDocument: JsonObject = {
           "검색·발견 대상 장소 목록입니다. 특별·광역시 자치구는 제외(시·군 단위만), " +
           "인구감소지역 → 도장 수 → 이름 순으로 정렬합니다. " +
           "depopulated=true면 인구감소지역만, regionGroup으로 권역 필터, " +
-          "lat/lng를 함께 넘기면 장소별 distanceKm를 서버가 계산합니다. (인증 불필요)",
+          "lat/lng를 함께 넘기면 장소별 distanceKm를 서버가 계산합니다. " +
+          "각 장소의 region.activeFestivals에는 지금 그 지역에서 진행 중인 스페셜 퀘스트(축제) 뱃지가 담깁니다. (인증 불필요)",
         parameters: [
           { name: "depopulated", in: "query", required: false, schema: { type: "boolean" }, description: "true면 인구감소지역만" },
           {
@@ -1022,7 +1023,8 @@ export const swaggerDocument: JsonObject = {
         tags: ["Places"],
         summary: "장소 상세",
         description:
-          "placeId 단건으로 장소 상세를 조회합니다. 이름·주소·좌표(mapX/mapY)·지역(displayName)·태그·방문자 수와 최신 후기(reviews)를 한 번에 반환합니다.",
+          "placeId 단건으로 장소 상세를 조회합니다. 이름·주소·좌표(mapX/mapY)·지역(displayName)·태그·방문자 수와 최신 후기(reviews)를 한 번에 반환합니다. " +
+          "region.activeFestivals에는 지금 그 지역에서 진행 중인 스페셜 퀘스트(축제) 뱃지가 담깁니다.",
         parameters: [
           { name: "placeId", in: "path", required: true, schema: { type: "string" } },
           { name: "reviewLimit", in: "query", required: false, schema: { type: "integer", default: 20 } },

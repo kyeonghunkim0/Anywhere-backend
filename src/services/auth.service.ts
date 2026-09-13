@@ -166,7 +166,7 @@ export async function loginAsGuest(input: GuestLoginInput): Promise<GuestAuthRes
         data: {
           socialType: "guest",
           socialId: deviceId,
-          nickname: nickname || `게스트_${Date.now().toString(36)}`,
+          nickname: nickname || `여행자_${Date.now().toString(36)}`,
           totalStamps: 0,
           isGuest: true,
           guestExpiresAt,

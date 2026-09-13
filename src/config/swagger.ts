@@ -182,6 +182,12 @@ export const swaggerDocument: JsonObject = {
             example: "https://tong.visitkorea.or.kr/cms2/website/52/2586952.jpg",
             description: "지역 대표 사진 (한국관광공사 관광사진갤러리)",
           },
+          quote: {
+            type: "string",
+            nullable: true,
+            example: "여기 오면 다들 국밥부터 한 그릇 하고 가요.",
+            description: "주민 한마디 (여권 지역 상세용 플레이버 텍스트)",
+          },
         },
       },
       MatchInfo: {

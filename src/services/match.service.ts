@@ -32,6 +32,7 @@ interface MatchResult {
     displayName: string; // 화면 표시용 (예: "부산 중구")
     isDepopulated: boolean;
     imageUrl: string | null; // 지역 대표 사진
+    quote: string | null; // 주민 한마디
   };
   matchInfo: {
     remainingMatches: number; // 오늘 남은 매칭 횟수
@@ -126,6 +127,7 @@ export async function getRandomMatch(input: MatchInput): Promise<MatchResult | n
       displayName: formatRegionName(selected.region.sidoName, selected.region.sigunguName),
       isDepopulated: selected.region.isDepopulated,
       imageUrl: selected.region.imageUrl,
+      quote: selected.region.quote,
     },
     matchInfo: {
       remainingMatches,
@@ -188,6 +190,7 @@ export async function createCustomMatch(input: CustomMatchInput): Promise<MatchR
       displayName: formatRegionName(place.region.sidoName, place.region.sigunguName),
       isDepopulated: place.region.isDepopulated,
       imageUrl: place.region.imageUrl,
+      quote: place.region.quote,
     },
     matchInfo: {
       remainingMatches,
@@ -288,6 +291,7 @@ interface CurrentTripResult {
     displayName: string; // 화면 표시용 (예: "부산 중구")
     isDepopulated: boolean;
     imageUrl: string | null; // 지역 대표 사진
+    quote: string | null; // 주민 한마디
   };
 }
 
@@ -309,6 +313,7 @@ function toCurrentTrip(
         sigunguName: string;
         isDepopulated: boolean;
         imageUrl: string | null;
+        quote: string | null;
       };
     };
   }
@@ -337,6 +342,7 @@ function toCurrentTrip(
       ),
       isDepopulated: matchHistory.place.region.isDepopulated,
       imageUrl: matchHistory.place.region.imageUrl,
+      quote: matchHistory.place.region.quote,
     },
   };
 }

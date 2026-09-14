@@ -170,6 +170,57 @@ export async function deleteMyAccount(userId: string): Promise<void> {
 }
 
 /**
+ * 사용자 차단
+ */
+export async function blockUser(blockerId: string, blockedId: string): Promise<void> {
+  if (blockerId === blockedId) {
+    throw new ValidationError("user.cannotBlockSelf");
+  }
+
+  const blocked = await prisma.user.findUnique({ where: { id: blockedId } });
+  if (!blocked) throw new NotFoundError("user.notFound");
+
+  await prisma.userBlock.create({ data: { blockerId, blockedId } });
+}
+
+/**
+ * 사용자 차단 해제
+ */
+export async function unblockUser(blockerId: string, blockedId: string): Promise<void> {
+  const existing = await prisma.userBlock.findUnique({
+    where: { blockerId_blockedId: { blockerId, blockedId } },
+  });
+  if (!existing) throw new NotFoundError("user.blockNotFound");
+
+  await prisma.userBlock.delete({ where: { id: existing.id } });
+}
+
+interface BlockedUserItem {
+  id: string;
+  nickname: string;
+  profileImage: string | null;
+  blockedAt: Date;
+}
+
+/**
+ * 내가 차단한 사용자 목록
+ */
+export async function getMyBlockedUsers(blockerId: string): Promise<BlockedUserItem[]> {
+  const blocks = await prisma.userBlock.findMany({
+    where: { blockerId },
+    orderBy: { createdAt: "desc" },
+    include: { blocked: { select: { id: true, nickname: true, profileImage: true } } },
+  });
+
+  return blocks.map((b) => ({
+    id: b.blocked.id,
+    nickname: b.blocked.nickname,
+    profileImage: b.blocked.profileImage,
+    blockedAt: b.createdAt,
+  }));
+}
+
+/**
  * 설정 - 푸시 알림 on/off
  */
 export async function updateMySettings(

@@ -217,6 +217,36 @@ export const messages = {
     ja: "レビューは{max}文字以内で入力してください。",
     zh: "评价内容请控制在 {max} 字以内。",
   },
+  "review.notFound": {
+    ko: "존재하지 않는 후기입니다.",
+    en: "This review does not exist.",
+    ja: "存在しないレビューです。",
+    zh: "该评价不存在。",
+  },
+  "review.reasonRequired": {
+    ko: "신고 사유(reason)는 필수입니다.",
+    en: "A report reason is required.",
+    ja: "通報理由(reason)は必須です。",
+    zh: "举报原因（reason）为必填项。",
+  },
+  "review.reasonInvalid": {
+    ko: "reason은 다음 중 하나여야 합니다: {options}",
+    en: "reason must be one of: {options}",
+    ja: "reasonは次のいずれかである必要があります: {options}",
+    zh: "reason 必须是以下之一：{options}",
+  },
+  "review.cannotReportOwn": {
+    ko: "본인이 작성한 후기는 신고할 수 없습니다.",
+    en: "You cannot report your own review.",
+    ja: "自分が書いたレビューは通報できません。",
+    zh: "无法举报自己发布的评价。",
+  },
+  "review.deleted": {
+    ko: "후기가 삭제되었습니다.",
+    en: "The review has been deleted.",
+    ja: "レビューが削除されました。",
+    zh: "评价已删除。",
+  },
 
   // ---------- 체크인 (미션) ----------
   "mission.paramsRequired": {
@@ -324,6 +354,18 @@ export const messages = {
     en: "Your account has been deleted.",
     ja: "退会処理が完了しました。",
     zh: "账号注销已完成。",
+  },
+  "user.cannotBlockSelf": {
+    ko: "자기 자신은 차단할 수 없습니다.",
+    en: "You cannot block yourself.",
+    ja: "自分自身をブロックすることはできません。",
+    zh: "无法屏蔽自己。",
+  },
+  "user.blockNotFound": {
+    ko: "차단한 사용자가 아닙니다.",
+    en: "You have not blocked this user.",
+    ja: "ブロックしていないユーザーです。",
+    zh: "尚未屏蔽该用户。",
   },
 
   // ---------- 관광지 / 지역 ----------

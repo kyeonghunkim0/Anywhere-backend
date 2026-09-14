@@ -7,6 +7,9 @@ import {
   updateMyProfile,
   updateMySettings,
   deleteMyAccount,
+  blockUser,
+  unblockUser,
+  getMyBlockedUsers,
   getRankerDetail,
 } from "../services/user.service.js";
 
@@ -108,6 +111,65 @@ export async function deleteMyAccountController(req: AuthRequest, res: Response)
     res.json({ success: true, message: localize(res, "user.withdrawn") });
   } catch (error) {
     respondWithError(res, error, "회원 탈퇴");
+  }
+}
+
+/**
+ * POST /api/users/:userId/block
+ * 사용자 차단
+ */
+export async function blockUserController(req: AuthRequest, res: Response): Promise<void> {
+  try {
+    const blockerId = req.user?.userId;
+    if (!blockerId) {
+      respondFail(res, 401, "auth.credentialsMissing");
+      return;
+    }
+
+    const blockedId = req.params.userId as string;
+    await blockUser(blockerId, blockedId);
+    res.status(201).json({ success: true, data: { blockedId } });
+  } catch (error) {
+    respondWithError(res, error, "사용자 차단");
+  }
+}
+
+/**
+ * DELETE /api/users/:userId/block
+ * 사용자 차단 해제
+ */
+export async function unblockUserController(req: AuthRequest, res: Response): Promise<void> {
+  try {
+    const blockerId = req.user?.userId;
+    if (!blockerId) {
+      respondFail(res, 401, "auth.credentialsMissing");
+      return;
+    }
+
+    const blockedId = req.params.userId as string;
+    await unblockUser(blockerId, blockedId);
+    res.json({ success: true, data: { blockedId } });
+  } catch (error) {
+    respondWithError(res, error, "사용자 차단 해제");
+  }
+}
+
+/**
+ * GET /api/users/me/blocks
+ * 내가 차단한 사용자 목록
+ */
+export async function getMyBlockedUsersController(req: AuthRequest, res: Response): Promise<void> {
+  try {
+    const userId = req.user?.userId;
+    if (!userId) {
+      respondFail(res, 401, "auth.credentialsMissing");
+      return;
+    }
+
+    const result = await getMyBlockedUsers(userId);
+    res.json({ success: true, data: result });
+  } catch (error) {
+    respondWithError(res, error, "차단 목록 조회");
   }
 }
 

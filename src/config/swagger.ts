@@ -1197,6 +1197,43 @@ export const swaggerDocument: JsonObject = {
         },
       },
     },
+    "/api/users/me/blocks": {
+      get: {
+        tags: ["Users"],
+        summary: "내가 차단한 사용자 목록",
+        security: [{ BearerAuth: [] }],
+        responses: {
+          "200": { description: "조회 성공" },
+          "401": { description: "인증 필요" },
+        },
+      },
+    },
+    "/api/users/{userId}/block": {
+      post: {
+        tags: ["Users"],
+        summary: "사용자 차단",
+        security: [{ BearerAuth: [] }],
+        parameters: [{ name: "userId", in: "path", required: true, schema: { type: "string" } }],
+        responses: {
+          "201": { description: "차단 성공" },
+          "400": { description: "자기 자신을 차단 시도" },
+          "401": { description: "인증 필요" },
+          "404": { description: "존재하지 않는 사용자" },
+          "409": { description: "이미 차단한 사용자" },
+        },
+      },
+      delete: {
+        tags: ["Users"],
+        summary: "사용자 차단 해제",
+        security: [{ BearerAuth: [] }],
+        parameters: [{ name: "userId", in: "path", required: true, schema: { type: "string" } }],
+        responses: {
+          "200": { description: "차단 해제 성공" },
+          "401": { description: "인증 필요" },
+          "404": { description: "차단하지 않은 사용자" },
+        },
+      },
+    },
     "/api/reviews": {
       post: {
         tags: ["Reviews"],
@@ -1235,6 +1272,66 @@ export const swaggerDocument: JsonObject = {
         ],
         responses: {
           "200": { description: "조회 성공" },
+        },
+      },
+    },
+    "/api/reviews/{reviewId}/report": {
+      post: {
+        tags: ["Reviews"],
+        summary: "후기 신고",
+        security: [{ BearerAuth: [] }],
+        parameters: [{ name: "reviewId", in: "path", required: true, schema: { type: "string" } }],
+        requestBody: {
+          required: true,
+          content: {
+            "application/json": {
+              schema: {
+                type: "object",
+                required: ["reason"],
+                properties: {
+                  reason: {
+                    type: "string",
+                    enum: ["SPAM", "ABUSE", "INAPPROPRIATE", "ETC"],
+                  },
+                  detail: { type: "string" },
+                },
+              },
+            },
+          },
+        },
+        responses: {
+          "201": { description: "신고 접수 성공" },
+          "400": { description: "reason 누락 / 잘못된 값 / 본인 후기 신고 시도" },
+          "401": { description: "인증 필요" },
+          "404": { description: "존재하지 않는 후기" },
+          "409": { description: "이미 신고한 후기" },
+        },
+      },
+    },
+    "/api/reviews/reports": {
+      get: {
+        tags: ["Reviews"],
+        summary: "(관리자) 신고된 후기 목록",
+        security: [{ AdminKeyAuth: [] }],
+        parameters: [
+          { name: "limit", in: "query", required: false, schema: { type: "integer", default: 50 } },
+        ],
+        responses: {
+          "200": { description: "조회 성공" },
+          "401": { description: "관리자 인증 필요" },
+        },
+      },
+    },
+    "/api/reviews/{reviewId}": {
+      delete: {
+        tags: ["Reviews"],
+        summary: "(관리자) 신고된 후기 삭제",
+        security: [{ AdminKeyAuth: [] }],
+        parameters: [{ name: "reviewId", in: "path", required: true, schema: { type: "string" } }],
+        responses: {
+          "200": { description: "삭제 성공" },
+          "401": { description: "관리자 인증 필요" },
+          "404": { description: "존재하지 않는 후기" },
         },
       },
     },

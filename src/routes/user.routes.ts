@@ -5,6 +5,9 @@ import {
   updateMyProfileController,
   updateMySettingsController,
   deleteMyAccountController,
+  blockUserController,
+  unblockUserController,
+  getMyBlockedUsersController,
   getRankerDetailController,
 } from "../controllers/user.controller.js";
 import { authMiddleware } from "../middlewares/auth.middleware.js";
@@ -40,6 +43,24 @@ router.patch("/me/settings", authMiddleware, updateMySettingsController);
  * 회원 탈퇴
  */
 router.delete("/me", authMiddleware, deleteMyAccountController);
+
+/**
+ * GET /api/users/me/blocks
+ * 내가 차단한 사용자 목록
+ */
+router.get("/me/blocks", authMiddleware, getMyBlockedUsersController);
+
+/**
+ * POST /api/users/:userId/block
+ * 사용자 차단
+ */
+router.post("/:userId/block", authMiddleware, blockUserController);
+
+/**
+ * DELETE /api/users/:userId/block
+ * 사용자 차단 해제
+ */
+router.delete("/:userId/block", authMiddleware, unblockUserController);
 
 /**
  * GET /api/users/:userId/detail

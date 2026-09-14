@@ -29,10 +29,13 @@ model User {
   createdAt      DateTime  @default(now())
   updatedAt      DateTime  @updatedAt
 
-  stamps        UserStamp[]
-  matchHistory  MatchHistory[]
-  badges        UserBadge[]
-  reviews       Review[]
+  stamps         UserStamp[]
+  matchHistory   MatchHistory[]
+  badges         UserBadge[]
+  reviews        Review[]
+  reviewReports  ReviewReport[] @relation("ReviewReportsMade")
+  blocksMade     UserBlock[]    @relation("BlocksMade")
+  blocksReceived UserBlock[]    @relation("BlocksReceived")
 
   @@index([isGuest, guestExpiresAt])
   @@map("users")
@@ -163,9 +166,49 @@ model Review {
   placeId String
   place   Place  @relation(fields: [placeId], references: [id])
 
+  reports ReviewReport[]
+
   @@index([userId])
   @@index([placeId])
   @@map("reviews")
+}
+
+// ============================================
+// 리뷰 신고 (Review_Reports Table)
+// ============================================
+model ReviewReport {
+  id        String   @id @default(cuid())
+  reason    String   // 신고 사유 코드 (예: "SPAM" | "ABUSE" | "INAPPROPRIATE" | "ETC")
+  detail    String?  // 기타 사유 상세 (reason이 "ETC"일 때 등)
+  createdAt DateTime @default(now())
+
+  reporterId String
+  reporter   User   @relation("ReviewReportsMade", fields: [reporterId], references: [id], onDelete: Cascade)
+
+  reviewId String
+  review   Review @relation(fields: [reviewId], references: [id], onDelete: Cascade)
+
+  @@unique([reporterId, reviewId]) // 같은 후기를 같은 유저가 중복 신고하는 것을 방지
+  @@index([reviewId])
+  @@map("review_reports")
+}
+
+// ============================================
+// 사용자 차단 (User_Blocks Table)
+// ============================================
+model UserBlock {
+  id        String   @id @default(cuid())
+  createdAt DateTime @default(now())
+
+  blockerId String
+  blocker   User   @relation("BlocksMade", fields: [blockerId], references: [id], onDelete: Cascade)
+
+  blockedId String
+  blocked   User   @relation("BlocksReceived", fields: [blockedId], references: [id], onDelete: Cascade)
+
+  @@unique([blockerId, blockedId])
+  @@index([blockedId])
+  @@map("user_blocks")
 }
 
 // ============================================

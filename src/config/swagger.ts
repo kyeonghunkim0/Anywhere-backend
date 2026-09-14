@@ -169,8 +169,10 @@ export const swaggerDocument: JsonObject = {
           latestReview: {
             type: "object",
             nullable: true,
-            description: "이 장소에 달린 가장 최신 후기 (없으면 null)",
+            description:
+              "이 장소에 달린 가장 최신 후기 (없으면 null). id는 POST /api/reviews/{reviewId}/report 호출에 사용합니다.",
             properties: {
+              id: { type: "string", example: "cku18namf0003n79tvl0vo78u" },
               content: { type: "string", example: "저녁에 산책하기 정말 좋아요." },
               nickname: { type: "string", example: "여행자" },
               createdAt: { type: "string", format: "date-time" },

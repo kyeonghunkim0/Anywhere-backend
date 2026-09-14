@@ -6,6 +6,7 @@ import { CITY_COUNTY_ONLY } from "../utils/regionFilter.js";
 import { getReviewsByPlace } from "./review.service.js";
 
 interface LatestReview {
+  id: string; // 후기 ID (신고 등 후기 단건 액션에 사용)
   content: string;
   nickname: string;
   createdAt: Date;
@@ -14,7 +15,9 @@ interface LatestReview {
 /** 장소의 가장 최신 후기 한 건 (없으면 null) */
 async function getLatestReview(placeId: string): Promise<LatestReview | null> {
   const [latest] = await getReviewsByPlace(placeId, 1);
-  return latest ? { content: latest.content, nickname: latest.nickname, createdAt: latest.createdAt } : null;
+  return latest
+    ? { id: latest.id, content: latest.content, nickname: latest.nickname, createdAt: latest.createdAt }
+    : null;
 }
 
 const MAX_DAILY_MATCHES = 20;

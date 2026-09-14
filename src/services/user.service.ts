@@ -159,6 +159,17 @@ export async function updateMyProfile(
 }
 
 /**
+ * 회원 탈퇴
+ * 연관 데이터(스탬프·매칭이력·뱃지·리뷰)는 onDelete: Cascade로 함께 삭제됩니다.
+ */
+export async function deleteMyAccount(userId: string): Promise<void> {
+  const user = await prisma.user.findUnique({ where: { id: userId } });
+  if (!user) throw new NotFoundError("user.notFound");
+
+  await prisma.user.delete({ where: { id: userId } });
+}
+
+/**
  * 설정 - 푸시 알림 on/off
  */
 export async function updateMySettings(

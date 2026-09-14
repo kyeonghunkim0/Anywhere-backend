@@ -4,6 +4,7 @@ import {
   getMyProfileStatsController,
   updateMyProfileController,
   updateMySettingsController,
+  deleteMyAccountController,
   getRankerDetailController,
 } from "../controllers/user.controller.js";
 import { authMiddleware } from "../middlewares/auth.middleware.js";
@@ -33,6 +34,12 @@ router.patch("/me", authMiddleware, updateMyProfileController);
  * 설정 - 푸시 알림 on/off
  */
 router.patch("/me/settings", authMiddleware, updateMySettingsController);
+
+/**
+ * DELETE /api/users/me
+ * 회원 탈퇴
+ */
+router.delete("/me", authMiddleware, deleteMyAccountController);
 
 /**
  * GET /api/users/:userId/detail

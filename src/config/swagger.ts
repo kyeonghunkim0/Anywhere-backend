@@ -1148,6 +1148,18 @@ export const swaggerDocument: JsonObject = {
           "401": { description: "인증 필요" },
         },
       },
+      delete: {
+        tags: ["Users"],
+        summary: "회원 탈퇴",
+        description:
+          "요청한 유저의 계정을 삭제합니다. 스탬프·매칭이력·뱃지·리뷰 등 연관 데이터는 DB cascade로 함께 삭제됩니다.",
+        security: [{ BearerAuth: [] }],
+        responses: {
+          "200": { description: "탈퇴 성공" },
+          "401": { description: "인증 필요" },
+          "404": { description: "존재하지 않는 사용자" },
+        },
+      },
     },
     "/api/users/me/stats": {
       get: {

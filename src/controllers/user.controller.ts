@@ -6,6 +6,7 @@ import {
   getMyProfileStats,
   updateMyProfile,
   updateMySettings,
+  deleteMyAccount,
   getRankerDetail,
 } from "../services/user.service.js";
 
@@ -88,6 +89,25 @@ export async function updateMySettingsController(req: AuthRequest, res: Response
     res.json({ success: true, message: localize(res, "common.settingsSaved"), data: profile });
   } catch (error) {
     respondWithError(res, error, "설정 수정");
+  }
+}
+
+/**
+ * DELETE /api/users/me
+ * 회원 탈퇴
+ */
+export async function deleteMyAccountController(req: AuthRequest, res: Response): Promise<void> {
+  try {
+    const userId = req.user?.userId;
+    if (!userId) {
+      respondFail(res, 401, "auth.credentialsMissing");
+      return;
+    }
+
+    await deleteMyAccount(userId);
+    res.json({ success: true, message: localize(res, "user.withdrawn") });
+  } catch (error) {
+    respondWithError(res, error, "회원 탈퇴");
   }
 }
 

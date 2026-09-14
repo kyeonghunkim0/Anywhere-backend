@@ -319,6 +319,12 @@ export const messages = {
     ja: "存在しないユーザーです。",
     zh: "该用户不存在。",
   },
+  "user.withdrawn": {
+    ko: "회원 탈퇴가 완료되었습니다.",
+    en: "Your account has been deleted.",
+    ja: "退会処理が完了しました。",
+    zh: "账号注销已完成。",
+  },
 
   // ---------- 관광지 / 지역 ----------
   "place.coordsInvalid": {
